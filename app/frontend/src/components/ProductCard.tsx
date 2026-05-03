@@ -70,13 +70,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Price */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <span className="text-white text-base font-light">
             {price.toLocaleString("ru-RU")} BYN
           </span>
-          <button className="bg-[#C69B56] text-black text-[10px] tracking-[0.1em] uppercase px-3 py-1.5 font-medium hover:bg-[#d4aa65] transition-colors duration-200">
-            В корзину
-          </button>
         </div>
       </div>
     </div>

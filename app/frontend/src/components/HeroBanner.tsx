@@ -1,22 +1,28 @@
-import { heroImage } from "@/data/products";
-
 export default function HeroBanner() {
   return (
     <section className="relative h-[70vh] sm:h-[80vh] overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0">
         <img
-          src={heroImage}
+          src="https://images.unsplash.com/photo-1541643600914-78b084683601?w=1920&q=80"
           alt="Luxury perfumes"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
       </div>
 
       {/* Content */}
       <div className="relative z-10 h-full flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-xl">
+          {/* Logo */}
+          <div className="mb-6">
+            <img
+              src="/logo.jpg"
+              alt="1000 Ароматов"
+              className="h-20 sm:h-24 lg:h-28 w-auto object-contain rounded-lg"
+            />
+          </div>
           <p className="text-[#C69B56] text-xs sm:text-sm tracking-[0.3em] uppercase mb-4 font-medium">
             ПАРФЮМ НА РАСПИВ
           </p>

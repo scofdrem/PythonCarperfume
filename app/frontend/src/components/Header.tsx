@@ -11,6 +11,7 @@ export default function Header() {
     { name: "Каталог", path: "/catalogue" },
     { name: "Бренды", path: "/catalogue?tab=brands" },
     { name: "О нас", path: "/#about" },
+    { name: "Админ", path: "/admin" },
   ];
 
   return (

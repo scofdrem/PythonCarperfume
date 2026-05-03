@@ -28,3 +28,9 @@
 - [x] Update src/index.css — global dark theme styles and custom fonts
 - [x] Remove Russia mentions and change currency to Belarusian ruble (BYN)
 - [x] Run lint and build, fix any issues
+- [x] Update HeroBanner.tsx — integrate uploaded logo into hero banner
+- [x] Remove "в корзину" button from ProductCard.tsx
+- [x] Add About Us section with map widget to HomeSections.tsx
+- [x] Create Admin panel page with CRUD for products (src/pages/Admin.tsx)
+- [x] Add Admin route to App.tsx
+- [x] Run lint and build, fix any issues

@@ -136,7 +136,16 @@ export function About() {
   return (
     <section id="about" className="py-16 sm:py-24 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        {/* Section title */}
+        <div className="text-center mb-12">
+          <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
+            О нас
+          </h2>
+          <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
+        </div>
+
+        {/* Info cards */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {[
             {
               icon: "🧪",
@@ -172,6 +181,55 @@ export function About() {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* About Us description + Map */}
+        <div className="grid lg:grid-cols-2 gap-8">
+          {/* Description */}
+          <div className="bg-[#1A1A1A] border border-white/5 p-8 sm:p-10">
+            <h3 className="text-[#C69B56] text-lg font-light tracking-[0.1em] uppercase mb-6">
+              1000 Ароматов
+            </h3>
+            <p className="text-white/60 text-sm leading-relaxed mb-4">
+              Мы — магазин парфюмерии на распив, который предлагает вам возможность
+              познакомиться с элитными ароматами без необходимости покупать полный флакон.
+              Каждый отливант разливается из оригинального флакона в стерильные условия
+              с соблюдением всех стандартов качества.
+            </p>
+            <p className="text-white/60 text-sm leading-relaxed mb-6">
+              В нашем каталоге более 950 ароматов от ведущих мировых брендов:
+              нишевая, люксовая и селективная парфюмерия. Мы гарантируем подлинность
+              каждого флакона и бережную доставку по всей Беларуси.
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <span className="text-[#C69B56]">📍</span>
+                <span className="text-white/50 text-sm">Минск, Беларусь</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[#C69B56]">📞</span>
+                <span className="text-white/50 text-sm">+375 (29) 123-45-67</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[#C69B56]">✉️</span>
+                <span className="text-white/50 text-sm">info@1000aromatov.by</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[#C69B56]">🕐</span>
+                <span className="text-white/50 text-sm">Пн–Пт: 10:00–20:00, Сб: 11:00–18:00</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Map */}
+          <div className="bg-[#1A1A1A] border border-white/5 overflow-hidden">
+            <iframe
+              title="Наше расположение"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=27.4%2C53.85%2C27.7%2C53.97&layer=mapnik"
+              className="w-full h-full min-h-[350px] border-0"
+              loading="lazy"
+            />
+          </div>
         </div>
       </div>
     </section>
