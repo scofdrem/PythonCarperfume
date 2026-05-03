@@ -26,4 +26,5 @@
 - [x] Add Log In button to Header.tsx
 - [x] Update src/App.tsx — add routes for homepage and catalogue
 - [x] Update src/index.css — global dark theme styles and custom fonts
+- [x] Remove Russia mentions and change currency to Belarusian ruble (BYN)
 - [x] Run lint and build, fix any issues

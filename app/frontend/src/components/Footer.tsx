@@ -25,7 +25,7 @@ export default function Footer() {
             </Link>
             <p className="text-white/30 text-xs leading-relaxed">
               Интернет-магазин отливантов элитной парфюмерии. Оригинальные ароматы
-              от 2 мл с доставкой по всей России.
+              от 2 мл с доставкой по всей Беларуси.
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export default function Footer() {
                   href="#"
                   className="hover:text-[#C69B56] transition-colors"
                 >
-                  +7 (999) 123-45-67
+                  +375 (29) 123-45-67
                 </a>
               </li>
               <li className="text-white/40 text-xs">
@@ -102,7 +102,7 @@ export default function Footer() {
                   href="#"
                   className="hover:text-[#C69B56] transition-colors"
                 >
-                  info@1000aromatov.ru
+                  info@1000aromatov.by
                 </a>
               </li>
             </ul>
