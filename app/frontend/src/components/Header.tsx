@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, X, Menu } from "lucide-react";
+import { Search, X, Menu, LogIn } from "lucide-react";
 
 export default function Header() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -59,7 +59,7 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Search */}
+          {/* Search + Login */}
           <div className="flex items-center gap-3">
             {searchOpen ? (
               <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
@@ -82,6 +82,14 @@ export default function Header() {
                 <Search size={20} />
               </button>
             )}
+
+            <Link
+              to="/auth/callback"
+              className="flex items-center gap-2 px-4 py-2 border border-[#C69B56]/40 text-[#C69B56] text-xs tracking-[0.1em] uppercase hover:bg-[#C69B56]/10 hover:border-[#C69B56] transition-colors"
+            >
+              <LogIn size={14} />
+              <span className="hidden sm:inline">Войти</span>
+            </Link>
           </div>
         </div>
       </div>
@@ -100,6 +108,14 @@ export default function Header() {
                 {link.name}
               </Link>
             ))}
+            <Link
+              to="/auth/callback"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-6 py-3 text-sm tracking-[0.1em] uppercase text-[#C69B56] hover:bg-[#C69B56]/10 transition-colors"
+            >
+              <LogIn size={14} />
+              Войти
+            </Link>
           </nav>
         </div>
       )}

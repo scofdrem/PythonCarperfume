@@ -12,16 +12,18 @@
 4. product-featured-perfume-3.jpg — Premium perfume bottle product shot on dark background, soft lighting (1024x1024)
 
 ## Development Tasks
-- [ ] Copy user logo image to public folder
-- [ ] Generate hero and product images
-- [ ] Create src/data/products.ts — mock product data with brands, categories, prices
-- [ ] Create src/components/Header.tsx — logo, navigation, search icon
-- [ ] Create src/components/HeroBanner.tsx — hero section with banner image and tagline
-- [ ] Create src/components/ProductCard.tsx — reusable product card (image, name, brand, volumes, price)
-- [ ] Create src/components/HomeSections.tsx — CategoryGrid, FeaturedProducts, Brands, NewArrivals, About sections
-- [ ] Create src/components/Footer.tsx — contacts, social links, service info
-- [ ] Create src/pages/Index.tsx — assemble homepage from all sections
-- [ ] Create src/pages/Catalogue.tsx — filterable product grid page with search
-- [ ] Update src/App.tsx — add routes for homepage and catalogue
-- [ ] Update src/index.css — global dark theme styles and custom fonts
-- [ ] Run lint and build, fix any issues
+- [x] Copy user logo image to public folder
+- [x] Generate hero and product images
+- [x] Create src/data/products.ts — mock product data with brands, categories, prices
+- [x] Create src/components/Header.tsx — logo, navigation, search icon
+- [x] Create src/components/HeroBanner.tsx — hero section with banner image and tagline
+- [x] Create src/components/ProductCard.tsx — reusable product card (image, name, brand, volumes, price)
+- [x] Create src/components/HomeSections.tsx — CategoryGrid, FeaturedProducts, Brands, NewArrivals, About sections
+- [x] Create src/components/Footer.tsx — contacts, social links, service info
+- [x] Create src/pages/Index.tsx — assemble homepage from all sections
+- [x] Create src/pages/Catalogue.tsx — filterable product grid page with search
+- [x] Add age-range filter to Catalogue.tsx
+- [x] Add Log In button to Header.tsx
+- [x] Update src/App.tsx — add routes for homepage and catalogue
+- [x] Update src/index.css — global dark theme styles and custom fonts
+- [x] Run lint and build, fix any issues

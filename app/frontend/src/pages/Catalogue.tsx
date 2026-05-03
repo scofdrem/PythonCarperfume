@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { products, brands, categories } from "@/data/products";
+import { products, brands, categories, ageRanges } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
 
 type SortOption = "popular" | "price-asc" | "price-desc" | "name";
@@ -14,6 +14,7 @@ export default function Catalogue() {
 
   const selectedCategory = searchParams.get("category") || "";
   const selectedBrand = searchParams.get("brand") || "";
+  const selectedAgeRange = searchParams.get("age") || "";
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -52,6 +53,10 @@ export default function Catalogue() {
       );
     }
 
+    if (selectedAgeRange) {
+      result = result.filter((p) => p.ageRange === selectedAgeRange);
+    }
+
     switch (sort) {
       case "price-asc":
         result.sort((a, b) => a.priceRange[0] - b.priceRange[0]);
@@ -65,9 +70,9 @@ export default function Catalogue() {
     }
 
     return result;
-  }, [search, selectedCategory, selectedBrand, sort]);
+  }, [search, selectedCategory, selectedBrand, selectedAgeRange, sort]);
 
-  const hasFilters = search || selectedCategory || selectedBrand;
+  const hasFilters = search || selectedCategory || selectedBrand || selectedAgeRange;
 
   return (
     <main className="min-h-screen bg-black pt-20 sm:pt-24">
@@ -127,7 +132,7 @@ export default function Catalogue() {
         {/* Filters panel */}
         {filtersOpen && (
           <div className="bg-[#1A1A1A] border border-white/5 p-6 mb-8">
-            <div className="grid sm:grid-cols-2 gap-6">
+            <div className="grid sm:grid-cols-3 gap-6">
               {/* Category filter */}
               <div>
                 <h3 className="text-[#C69B56] text-xs tracking-[0.1em] uppercase mb-3 font-medium">
@@ -191,6 +196,38 @@ export default function Catalogue() {
                   ))}
                 </div>
               </div>
+
+              {/* Age range filter */}
+              <div>
+                <h3 className="text-[#C69B56] text-xs tracking-[0.1em] uppercase mb-3 font-medium">
+                  Возраст
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => setFilter("age", "")}
+                    className={`px-3 py-1.5 text-[11px] border transition-colors ${
+                      !selectedAgeRange
+                        ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
+                        : "border-white/10 text-white/40 hover:border-white/30"
+                    }`}
+                  >
+                    Все
+                  </button>
+                  {ageRanges.map((ar) => (
+                    <button
+                      key={ar.value}
+                      onClick={() => setFilter("age", ar.value)}
+                      className={`px-3 py-1.5 text-[11px] border transition-colors ${
+                        selectedAgeRange === ar.value
+                          ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
+                          : "border-white/10 text-white/40 hover:border-white/30"
+                      }`}
+                    >
+                      {ar.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {hasFilters && (
@@ -220,6 +257,14 @@ export default function Catalogue() {
               <span className="flex items-center gap-1 bg-[#C69B56]/10 border border-[#C69B56]/30 text-[#C69B56] text-[11px] px-2 py-1">
                 {brands.find((b) => b.slug === selectedBrand)?.name || selectedBrand}
                 <button onClick={() => setFilter("brand", "")}>
+                  <X size={10} />
+                </button>
+              </span>
+            )}
+            {selectedAgeRange && (
+              <span className="flex items-center gap-1 bg-[#C69B56]/10 border border-[#C69B56]/30 text-[#C69B56] text-[11px] px-2 py-1">
+                {ageRanges.find((a) => a.value === selectedAgeRange)?.label || selectedAgeRange}
+                <button onClick={() => setFilter("age", "")}>
                   <X size={10} />
                 </button>
               </span>

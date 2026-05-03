@@ -4,12 +4,25 @@ export interface Product {
   brand: string;
   category: string;
   gender: "women" | "men" | "unisex";
+  ageRange: "18-25" | "25-35" | "35-45" | "45+";
   volumes: number[];
   priceRange: [number, number];
   image: string;
   isNew?: boolean;
   isFeatured?: boolean;
 }
+
+export interface AgeRangeOption {
+  label: string;
+  value: string;
+}
+
+export const ageRanges: AgeRangeOption[] = [
+  { label: "18–25", value: "18-25" },
+  { label: "25–35", value: "25-35" },
+  { label: "35–45", value: "35-45" },
+  { label: "45+", value: "45+" },
+];
 
 export interface Brand {
   name: string;
@@ -65,6 +78,7 @@ export const products: Product[] = [
     brand: "Essential Parfums",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [15, 519],
     image: PROD_1,
@@ -76,6 +90,7 @@ export const products: Product[] = [
     brand: "Zadig & Voltaire",
     category: "women",
     gender: "women",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [14, 210],
     image: PROD_2,
@@ -87,6 +102,7 @@ export const products: Product[] = [
     brand: "Chloé",
     category: "luxury",
     gender: "women",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [30, 450],
     image: PROD_3,
@@ -98,6 +114,7 @@ export const products: Product[] = [
     brand: "By KILIAN",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [35, 1073],
     image: PROD_1,
@@ -109,6 +126,7 @@ export const products: Product[] = [
     brand: "Ex Nihilo",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [35, 525],
     image: PROD_2,
@@ -120,6 +138,7 @@ export const products: Product[] = [
     brand: "Moschino",
     category: "women",
     gender: "women",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [10, 350],
     image: PROD_3,
@@ -131,6 +150,7 @@ export const products: Product[] = [
     brand: "Juliette Has A Gun",
     category: "niche",
     gender: "women",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [10, 280],
     image: PROD_1,
@@ -142,6 +162,7 @@ export const products: Product[] = [
     brand: "Nishane",
     category: "niche",
     gender: "unisex",
+    ageRange: "35-45",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [24, 580],
     image: PROD_2,
@@ -153,6 +174,7 @@ export const products: Product[] = [
     brand: "Attar Collection",
     category: "niche",
     gender: "unisex",
+    ageRange: "35-45",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [12, 320],
     image: PROD_3,
@@ -164,6 +186,7 @@ export const products: Product[] = [
     brand: "Byredo",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [21, 490],
     image: PROD_1,
@@ -175,6 +198,7 @@ export const products: Product[] = [
     brand: "Maison Francis Kurkdjian",
     category: "niche",
     gender: "unisex",
+    ageRange: "35-45",
     volumes: [2, 3, 5, 10, 15, 20, 30, 200],
     priceRange: [28, 1536],
     image: PROD_2,
@@ -186,6 +210,7 @@ export const products: Product[] = [
     brand: "Marc-Antoine Barrois",
     category: "niche",
     gender: "men",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [25, 610],
     image: PROD_3,
@@ -197,6 +222,7 @@ export const products: Product[] = [
     brand: "Mancera",
     category: "niche",
     gender: "unisex",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30, 60, 120],
     priceRange: [12, 375],
     image: PROD_1,
@@ -208,6 +234,7 @@ export const products: Product[] = [
     brand: "Dolce & Gabbana",
     category: "luxury",
     gender: "men",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [10, 312],
     image: PROD_2,
@@ -219,6 +246,7 @@ export const products: Product[] = [
     brand: "Juliette Has A Gun",
     category: "niche",
     gender: "women",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [12, 180],
     image: PROD_3,
@@ -230,6 +258,7 @@ export const products: Product[] = [
     brand: "Van Cleef & Arpels",
     category: "luxury",
     gender: "women",
+    ageRange: "45+",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [30, 450],
     image: PROD_1,
@@ -241,6 +270,7 @@ export const products: Product[] = [
     brand: "Le Labo",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [40, 1536],
     image: PROD_2,
@@ -252,6 +282,7 @@ export const products: Product[] = [
     brand: "Akro",
     category: "niche",
     gender: "unisex",
+    ageRange: "18-25",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [15, 225],
     image: PROD_3,
@@ -263,6 +294,7 @@ export const products: Product[] = [
     brand: "Antonio Maretti",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30],
     priceRange: [19, 285],
     image: PROD_1,
@@ -274,6 +306,7 @@ export const products: Product[] = [
     brand: "Giorgio Armani",
     category: "luxury",
     gender: "unisex",
+    ageRange: "35-45",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [22, 953],
     image: PROD_2,
@@ -285,6 +318,7 @@ export const products: Product[] = [
     brand: "Mancera",
     category: "niche",
     gender: "men",
+    ageRange: "35-45",
     volumes: [2, 3, 5, 10, 15, 20, 30, 60, 120],
     priceRange: [12, 380],
     image: PROD_3,
@@ -296,6 +330,7 @@ export const products: Product[] = [
     brand: "Thomas Kosmala",
     category: "niche",
     gender: "unisex",
+    ageRange: "25-35",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [14, 340],
     image: PROD_1,
@@ -307,6 +342,7 @@ export const products: Product[] = [
     brand: "Tiziana Terenzi",
     category: "niche",
     gender: "women",
+    ageRange: "45+",
     volumes: [2, 3, 5, 10, 15, 20, 30, 100],
     priceRange: [15, 420],
     image: PROD_2,
@@ -318,6 +354,7 @@ export const products: Product[] = [
     brand: "Ex Nihilo",
     category: "niche",
     gender: "unisex",
+    ageRange: "45+",
     volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
     priceRange: [35, 525],
     image: PROD_3,
