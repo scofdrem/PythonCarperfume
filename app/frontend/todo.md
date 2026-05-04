@@ -34,3 +34,11 @@
 - [x] Create Admin panel page with CRUD for products (src/pages/Admin.tsx)
 - [x] Add Admin route to App.tsx
 - [x] Run lint and build, fix any issues
+- [x] Remove "количество ароматов" from category cards
+- [x] Add "Обзор в Instagram" hyperlink to product cards
+- [x] Add description text field on product cards (accordion)
+- [x] Create accordion on product cards with "Подробнее" toggle
+- [x] Remove "Цена от" / "Цена до" price range filters
+- [x] Delete "Популярные Бренды" section from homepage
+- [x] Adjust volume range starting at 5 with step by 5 units
+- [x] Run lint and build, fix any issues

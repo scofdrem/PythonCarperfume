@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown, Instagram } from "lucide-react";
 import type { Product } from "@/data/products";
 
 interface ProductCardProps {
@@ -9,6 +10,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [selectedVolume, setSelectedVolume] = useState(
     product.volumes[Math.min(2, product.volumes.length - 1)]
   );
+  const [accordionOpen, setAccordionOpen] = useState(false);
 
   const getPriceForVolume = (vol: number): number => {
     const minVol = product.volumes[0];
@@ -70,10 +72,53 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Price */}
-        <div className="flex items-center">
+        <div className="flex items-center mb-3">
           <span className="text-white text-base font-light">
             {price.toLocaleString("ru-RU")} BYN
           </span>
+        </div>
+
+        {/* Accordion toggle */}
+        <button
+          onClick={() => setAccordionOpen(!accordionOpen)}
+          className="w-full flex items-center justify-between text-[#C69B56] text-[11px] tracking-[0.1em] uppercase py-2 border-t border-white/5 hover:text-[#d4aa65] transition-colors"
+        >
+          <span>Подробнее</span>
+          <ChevronDown
+            size={14}
+            className={`transition-transform duration-300 ${
+              accordionOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+
+        {/* Accordion content */}
+        <div
+          className={`overflow-hidden transition-all duration-300 ${
+            accordionOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+        >
+          <div className="pt-3 space-y-3">
+            {/* Description */}
+            {product.description && (
+              <p className="text-white/50 text-xs leading-relaxed">
+                {product.description}
+              </p>
+            )}
+
+            {/* Instagram link */}
+            {product.instagramUrl && (
+              <a
+                href={product.instagramUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-[#C69B56] text-[11px] tracking-wide hover:text-[#d4aa65] transition-colors"
+              >
+                <Instagram size={14} />
+                Обзор в Instagram
+              </a>
+            )}
+          </div>
         </div>
       </div>
     </div>

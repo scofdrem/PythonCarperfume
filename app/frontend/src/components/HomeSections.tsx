@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import {
   categories,
-  brands,
   featuredProducts,
   newProducts,
 } from "@/data/products";
@@ -35,9 +34,6 @@ export function CategoryGrid() {
                 <h3 className="text-white text-sm font-medium tracking-wide">
                   {cat.name}
                 </h3>
-                <p className="text-[#C69B56]/60 text-[11px] mt-1">
-                  {cat.count.toLocaleString("ru-RU")} ароматов
-                </p>
               </div>
             </Link>
           ))}
@@ -69,33 +65,6 @@ export function FeaturedProducts() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {featuredProducts.slice(0, 8).map((product) => (
             <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-export function Brands() {
-  return (
-    <section className="py-16 sm:py-24 bg-black">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-            Популярные бренды
-          </h2>
-          <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-          {brands.slice(0, 16).map((brand) => (
-            <Link
-              key={brand.slug}
-              to={`/catalogue?brand=${brand.slug}`}
-              className="flex items-center justify-center py-4 px-3 bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/30 text-white/50 hover:text-[#C69B56] text-xs sm:text-sm tracking-wide text-center transition-all duration-300"
-            >
-              {brand.name}
-            </Link>
           ))}
         </div>
       </div>

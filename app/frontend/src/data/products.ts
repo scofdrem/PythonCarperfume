@@ -8,6 +8,8 @@ export interface Product {
   volumes: number[];
   priceRange: [number, number];
   image: string;
+  description: string;
+  instagramUrl: string;
   isNew?: boolean;
   isFeatured?: boolean;
 }
@@ -32,7 +34,6 @@ export interface Brand {
 export interface Category {
   name: string;
   slug: string;
-  count: number;
   image: string;
 }
 
@@ -44,12 +45,12 @@ const PROD_3 = "https://mgx-backend-cdn.metadl.com/generate/images/1170518/2026-
 export const heroImage = HERO_IMG;
 
 export const categories: Category[] = [
-  { name: "Отливанты", slug: "decants", count: 950, image: PROD_1 },
-  { name: "Женская", slug: "women", count: 6700, image: PROD_2 },
-  { name: "Мужская", slug: "men", count: 5400, image: PROD_3 },
-  { name: "Нишевая", slug: "niche", count: 4100, image: PROD_1 },
-  { name: "Люксовая", slug: "luxury", count: 4000, image: PROD_2 },
-  { name: "Унисекс", slug: "unisex", count: 3850, image: PROD_3 },
+  { name: "Отливанты", slug: "decants", image: PROD_1 },
+  { name: "Женская", slug: "women", image: PROD_2 },
+  { name: "Мужская", slug: "men", image: PROD_3 },
+  { name: "Нишевая", slug: "niche", image: PROD_1 },
+  { name: "Люксовая", slug: "luxury", image: PROD_2 },
+  { name: "Унисекс", slug: "unisex", image: PROD_3 },
 ];
 
 export const brands: Brand[] = [
@@ -79,9 +80,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [15, 519],
     image: PROD_1,
+    description: "Древесный унисекс-аромат с яркими нотами бобов тонка, ветивера и амброксана. Идеальный выбор для тех, кто ценит элегантность и утончённость в каждом вдохе.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -91,9 +94,11 @@ export const products: Product[] = [
     category: "women",
     gender: "women",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [14, 210],
     image: PROD_2,
+    description: "Роковой женский аромат с нотами розового перца, жасмина и кашемирового дерева. Чувственный и современный, он подчёркивает индивидуальность.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -103,9 +108,11 @@ export const products: Product[] = [
     category: "luxury",
     gender: "women",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [30, 450],
     image: PROD_3,
+    description: "Изысканный цветочный аромат от Chloé с нотами кедра и пионов. Нежный и утончённый, он переносит в атмосферу цветущего сада.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -115,9 +122,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [35, 1073],
     image: PROD_1,
+    description: "Тёплый коньячный аромат с нотами корицы, дуба и пралине. Вдохновлён ирландскими традициями вискикурения — роскошь в каждой капле.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -127,9 +136,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [35, 525],
     image: PROD_2,
+    description: "Дерзкий и провокационный аромат с нотами чёрной смородины, розы и пачули. Для тех, кто не боится выделяться из толпы.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -139,9 +150,11 @@ export const products: Product[] = [
     category: "women",
     gender: "women",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [10, 350],
     image: PROD_3,
+    description: "Игривый и кокетливый аромат с нотами яблока, магнолии и белой амбры. Олицетворяет юность и беззаботную радость жизни.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -151,9 +164,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "women",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [10, 280],
     image: PROD_1,
+    description: "Минималистичный аромат на основе единственной ноты — кетала. Чистый, лаконичный и невероятно притягательный, он звучит уникально на каждом.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -163,9 +178,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "35-45",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [24, 580],
     image: PROD_2,
+    description: "Глубокий восточный аромат с нотами туберозы, иланга и сандала. Многогранный и обволакивающий, он раскрывается постепенно.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -175,9 +192,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "35-45",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [12, 320],
     image: PROD_3,
+    description: "Мускусно-цветочный аромат с нотами кашмирского мускуса, розы и уда. Утончённый и чувственный, он создаёт ауру таинственности.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -187,9 +206,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [21, 490],
     image: PROD_1,
+    description: "Яркий и жизнерадостный аромат, вдохновлённый парижским балом в честь африканской культуры. Ноты ветивера, чёрной смородины и лимона.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -199,9 +220,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "35-45",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 200],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [28, 1536],
     image: PROD_2,
+    description: "Легендарный аромат с нотами шафрана, амбры и кедра. Кристально чистый и обволакивающий — настоящий шедевр парфюмерного искусства.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -211,9 +234,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "men",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [25, 610],
     image: PROD_3,
+    description: "Футуристический аромат с нотами мандарина, фиалки и замши. Минеральный и космический, он открывает новые горизонты парфюмерии.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -223,9 +248,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 60, 120],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [12, 375],
     image: PROD_1,
+    description: "Солнечный и энергичный аромат с нотами кокоса, ванили и белого мускуса. Идеальный компаньон для тёплых летних дней.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -235,9 +262,11 @@ export const products: Product[] = [
     category: "luxury",
     gender: "men",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [10, 312],
     image: PROD_2,
+    description: "Классический мужской аромат с нотами кардамона, имбиря и амбры. Уверенный и харизматичный — для настоящего джентльмена.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -247,9 +276,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "women",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [12, 180],
     image: PROD_3,
+    description: "Весёлый и необычный аромат с нотами банана, жасмина и сандала. Сладкий, но не приторный — настоящий праздник для чувств.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -259,9 +290,11 @@ export const products: Product[] = [
     category: "luxury",
     gender: "women",
     ageRange: "45+",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [30, 450],
     image: PROD_1,
+    description: "Утончённый цитрусовый аромат с нотами нероли, петитгрейна и мускуса. Элегантный и свежий, он подчёркивает безупречный вкус.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -271,9 +304,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [40, 1536],
     image: PROD_2,
+    description: "Загадочный и притягательный аромат с нотами амбретты, жасмина и мускуса. Культовый нишевый аромат с характером.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -283,9 +318,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "18-25",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [15, 225],
     image: PROD_3,
+    description: "Страстный аромат с нотами малины, розы и пачули. Влюбляет с первого вдоха и не отпускает — настоящая парфюмерная страсть.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -295,9 +332,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [19, 285],
     image: PROD_1,
+    description: "Яркий цитрусовый аромат с нотами лимончелло, бергамота и ванили. Как итальянское лето в одном флаконе — солнечно и радостно.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -307,9 +346,11 @@ export const products: Product[] = [
     category: "luxury",
     gender: "unisex",
     ageRange: "35-45",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [22, 953],
     image: PROD_2,
+    description: "Умиротворяющий аромат с нотами зелёного чая, жасмина и мускуса. Гармония и спокойствие в каждом вдохе, вдохновлён китайским чаем Юлун.",
+    instagramUrl: "https://instagram.com",
     isNew: true,
   },
   {
@@ -319,9 +360,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "men",
     ageRange: "35-45",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 60, 120],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [12, 380],
     image: PROD_3,
+    description: "Мощный и насыщенный аромат с нотами табака, корицы и ванили. Тёплый, обволакивающий и невероятно стойкий — для холодных вечеров.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -331,9 +374,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "25-35",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [14, 340],
     image: PROD_1,
+    description: "Чувственный аромат с нотами мускуса, амбры и белых цветов. Интимный и обволакивающий — как нежное прикосновение после любви.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -343,9 +388,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "women",
     ageRange: "45+",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [15, 420],
     image: PROD_2,
+    description: "Фруктово-цветочный аромат с нотами малины, груши и жасмина. Опьяняющий и магический, как зелье древней богини Кирки.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
   {
@@ -355,9 +402,11 @@ export const products: Product[] = [
     category: "niche",
     gender: "unisex",
     ageRange: "45+",
-    volumes: [2, 3, 5, 10, 15, 20, 30, 50, 100],
+    volumes: [5, 10, 15, 20, 25, 30],
     priceRange: [35, 525],
     image: PROD_3,
+    description: "Загадочный и мистический аромат с нотами ладана, уда и амбры. Как древний талисман — оберегает и притягивает взгляды.",
+    instagramUrl: "https://instagram.com",
     isFeatured: true,
   },
 ];
