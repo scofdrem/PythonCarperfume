@@ -1177,7 +1177,7 @@ export default function Admin() {
                     </span>
                   </div>
                   <span className="text-[#C69B56]/60 text-xs">
-                    {cat.count.toLocaleString("ru-RU")} ароматов
+                    {products.filter((p) => p.category === cat.slug).length} ароматов
                   </span>
                 </div>
               ))}

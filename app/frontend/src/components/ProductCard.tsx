@@ -13,9 +13,10 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [accordionOpen, setAccordionOpen] = useState(false);
 
   const getPriceForVolume = (vol: number): number => {
-    const minVol = product.volumes[0];
-    const maxVol = product.volumes[product.volumes.length - 1];
-    const [minPrice, maxPrice] = product.priceRange;
+    const minVol = product.volumes?.[0] ?? vol;
+    const maxVol = product.volumes?.[product.volumes.length - 1] ?? vol;
+    const minPrice = product.priceRange?.[0] ?? 0;
+    const maxPrice = product.priceRange?.[1] ?? 0;
     if (vol <= minVol) return minPrice;
     if (vol >= maxVol) return maxPrice;
     const ratio = (vol - minVol) / (maxVol - minVol);
