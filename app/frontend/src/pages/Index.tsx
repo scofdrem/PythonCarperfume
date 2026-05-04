@@ -1,3 +1,5 @@
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import HeroBanner from "@/components/HeroBanner";
 import {
   CategoryGrid,
@@ -8,12 +10,16 @@ import {
 
 export default function Index() {
   return (
-    <main>
-      <HeroBanner />
-      <CategoryGrid />
-      <FeaturedProducts />
-      <NewArrivals />
-      <About />
-    </main>
+    <div className="min-h-screen bg-black">
+      <Header />
+      <main>
+        <HeroBanner />
+        <CategoryGrid />
+        <FeaturedProducts />
+        <NewArrivals />
+        <About />
+      </main>
+      <Footer />
+    </div>
   );
 }

@@ -42,3 +42,10 @@
 - [x] Delete "Популярные Бренды" section from homepage
 - [x] Adjust volume range starting at 5 with step by 5 units
 - [x] Run lint and build, fix any issues
+- [x] Create src/data/siteContent.ts — centralized editable content for Hero, Section Headings, About Us, Footer
+- [x] Expand Admin panel with new tabs: Hero Banner, Заголовки, О нас, Подвал
+- [x] Add image upload support in Admin panel (file input → base64 data URL)
+- [x] Update Footer social icons to Telegram, Viber, Instagram
+- [x] Ensure Header (sticky with logo) and Footer render on all pages
+- [x] Wire siteContent data to HeroBanner, HomeSections, Footer components
+- [x] Run lint and build, fix any issues

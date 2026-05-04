@@ -4,15 +4,18 @@ import {
   featuredProducts,
   newProducts,
 } from "@/data/products";
+import { useSiteContent } from "@/data/siteContent";
 import ProductCard from "./ProductCard";
 
 export function CategoryGrid() {
+  const content = useSiteContent();
+
   return (
     <section className="py-16 sm:py-24 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-            Категории
+            {content.sectionHeadings.categories}
           </h2>
           <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
         </div>
@@ -44,13 +47,15 @@ export function CategoryGrid() {
 }
 
 export function FeaturedProducts() {
+  const content = useSiteContent();
+
   return (
     <section className="py-16 sm:py-24 bg-[#0A0A0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-12">
           <div>
             <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-              Хиты продаж
+              {content.sectionHeadings.featured}
             </h2>
             <div className="w-16 h-px bg-[#C69B56] mt-4" />
           </div>
@@ -73,13 +78,15 @@ export function FeaturedProducts() {
 }
 
 export function NewArrivals() {
+  const content = useSiteContent();
+
   return (
     <section className="py-16 sm:py-24 bg-[#0A0A0A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-12">
           <div>
             <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-              Новинки
+              {content.sectionHeadings.newArrivals}
             </h2>
             <div className="w-16 h-px bg-[#C69B56] mt-4" />
           </div>
@@ -102,41 +109,23 @@ export function NewArrivals() {
 }
 
 export function About() {
+  const content = useSiteContent();
+  const { about } = content;
+
   return (
     <section id="about" className="py-16 sm:py-24 bg-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section title */}
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-            О нас
+            {content.sectionHeadings.about}
           </h2>
           <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
         </div>
 
         {/* Info cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          {[
-            {
-              icon: "🧪",
-              title: "Оригинальная продукция",
-              desc: "Все отливанты создаются исключительно из оригинальных флаконов с сертификатами подлинности",
-            },
-            {
-              icon: "📦",
-              title: "Безопасная упаковка",
-              desc: "Каждый отливант разливается в стерильные стеклянные флаконы с распылителем",
-            },
-            {
-              icon: "🚚",
-              title: "Доставка по Беларуси",
-              desc: "Отправляем заказы в любой город Беларуси. Бесплатная доставка от 100 BYN",
-            },
-            {
-              icon: "💎",
-              title: "Более 950 ароматов",
-              desc: "Нишевая, люксовая и селективная парфюмерия от мировых брендов",
-            },
-          ].map((item, i) => (
+          {about.cards.map((item, i) => (
             <div
               key={i}
               className="text-center p-6 bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/20 transition-colors duration-300"
@@ -157,35 +146,30 @@ export function About() {
           {/* Description */}
           <div className="bg-[#1A1A1A] border border-white/5 p-8 sm:p-10">
             <h3 className="text-[#C69B56] text-lg font-light tracking-[0.1em] uppercase mb-6">
-              1000 Ароматов
+              {about.title}
             </h3>
             <p className="text-white/60 text-sm leading-relaxed mb-4">
-              Мы — магазин парфюмерии на распив, который предлагает вам возможность
-              познакомиться с элитными ароматами без необходимости покупать полный флакон.
-              Каждый отливант разливается из оригинального флакона в стерильные условия
-              с соблюдением всех стандартов качества.
+              {about.description1}
             </p>
             <p className="text-white/60 text-sm leading-relaxed mb-6">
-              В нашем каталоге более 950 ароматов от ведущих мировых брендов:
-              нишевая, люксовая и селективная парфюмерия. Мы гарантируем подлинность
-              каждого флакона и бережную доставку по всей Беларуси.
+              {about.description2}
             </p>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <span className="text-[#C69B56]">📍</span>
-                <span className="text-white/50 text-sm">Минск, Беларусь</span>
+                <span className="text-white/50 text-sm">{about.location}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[#C69B56]">📞</span>
-                <span className="text-white/50 text-sm">+375 (29) 123-45-67</span>
+                <span className="text-white/50 text-sm">{about.phone}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[#C69B56]">✉️</span>
-                <span className="text-white/50 text-sm">info@1000aromatov.by</span>
+                <span className="text-white/50 text-sm">{about.email}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-[#C69B56]">🕐</span>
-                <span className="text-white/50 text-sm">Пн–Пт: 10:00–20:00, Сб: 11:00–18:00</span>
+                <span className="text-white/50 text-sm">{about.workingHours}</span>
               </div>
             </div>
           </div>
@@ -194,7 +178,7 @@ export function About() {
           <div className="bg-[#1A1A1A] border border-white/5 overflow-hidden">
             <iframe
               title="Наше расположение"
-              src="https://www.openstreetmap.org/export/embed.html?bbox=27.4%2C53.85%2C27.7%2C53.97&layer=mapnik"
+              src={about.mapUrl}
               className="w-full h-full min-h-[350px] border-0"
               loading="lazy"
             />
