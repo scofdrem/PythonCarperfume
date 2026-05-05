@@ -36,14 +36,31 @@ class DatabaseManager:
         """Remove query parameters that are incompatible with asyncpg.
 
         Some providers (e.g. Neon) may inject parameters like ``channel_binding``
-        that are not supported by asyncpg and cause connection failures.
+        or ``sslmode`` that are not supported by asyncpg and cause connection failures.
+        asyncpg handles SSL through the ``ssl`` connect_arg, not via query parameters.
         """
-        unsupported_params = {"channel_binding"}
+        unsupported_params = {"channel_binding", "sslmode"}
         found = unsupported_params & set(url.query)
         if found:
             logger.warning(f"Removed unsupported database URL query params: {sorted(found)}")
             return url.set(query={k: v for k, v in url.query.items() if k not in unsupported_params})
         return url
+
+    @staticmethod
+    def _extract_ssl_requirement(url):
+        """Check if the original URL requires SSL and return asyncpg-compatible ssl arg.
+
+        asyncpg does not accept ``sslmode`` as a query parameter. Instead, SSL must
+        be configured via the ``ssl`` connect argument. This method inspects the
+        original ``sslmode`` value and returns the appropriate ssl setting for
+        asyncpg's ``connect_args``.
+        """
+        sslmode = url.query.get("sslmode", "").lower()
+        if sslmode in ("require", "verify-ca", "verify-full"):
+            return True
+        if sslmode in ("disable", "allow", "prefer"):
+            return None  # Let asyncpg decide (default behavior)
+        return None
 
     def _normalize_async_database_url(self, raw_url: str) -> str:
         """Ensure the database URL uses an async driver compatible with SQLAlchemy asyncio.
@@ -120,11 +137,21 @@ class DatabaseManager:
             logger.info("Normalizing database URL for async compatibility...")
             database_url = self._normalize_async_database_url(settings.database_url)
 
+            # Extract SSL requirement before sanitization removes sslmode param
+            parsed_url = make_url(settings.database_url)
+            ssl_arg = self._extract_ssl_requirement(parsed_url)
+
             logger.info("Creating async database engine...")
             # Configure engine based on environment (Lambda vs non-Lambda)
             engine_kwargs = {
                 "echo": settings.debug,
             }
+
+            # Pass SSL configuration through connect_args for asyncpg
+            # asyncpg does not accept sslmode as a query parameter
+            if ssl_arg is not None:
+                engine_kwargs["connect_args"] = {"ssl": ssl_arg}
+                logger.info(f"Configured SSL for asyncpg via connect_args: ssl={ssl_arg}")
 
             # Check if we're in a Lambda environment
             is_lambda = bool(
