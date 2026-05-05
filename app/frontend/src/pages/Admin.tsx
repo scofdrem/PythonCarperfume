@@ -426,22 +426,21 @@ export default function Admin() {
     loadAccount();
     loadFeedbackEmail();
 
-    // Load SMTP/Mail settings from backend env vars
+    // Load SMTP/Mail settings from database (persists across redeployments)
     const loadMailSettings = async () => {
       try {
         const res = await client.apiCall.invoke({
-          url: "/api/v1/admin/settings",
+          url: "/api/v1/admin/smtp",
           method: "GET",
           data: {},
         });
-        if (res.data?.backend_vars) {
-          const bv = res.data.backend_vars;
-          setSmtpHost(bv.SMTP_HOST?.value || "");
-          setSmtpPort(bv.SMTP_PORT?.value || "");
-          setSmtpUser(bv.SMTP_USER?.value || "");
-          setSmtpPassword(bv.SMTP_PASSWORD?.value || "");
-          setEmailFrom(bv.EMAIL_FROM?.value || "");
-          setEmailTo(bv.EMAIL_TO?.value || "");
+        if (res.data) {
+          setSmtpHost(res.data.smtp_host || "");
+          setSmtpPort(res.data.smtp_port || "");
+          setSmtpUser(res.data.smtp_user || "");
+          setSmtpPassword(res.data.smtp_password || "");
+          setEmailFrom(res.data.email_from || "");
+          setEmailTo(res.data.email_to || "");
         }
       } catch {
         // silently fail - user may not be authenticated
@@ -2666,22 +2665,19 @@ export default function Admin() {
                     setMailLoading(true);
                     setMailMsg(null);
                     try {
-                      const settings = [
-                        { key: "SMTP_HOST", value: smtpHost.trim() },
-                        { key: "SMTP_PORT", value: smtpPort.trim() },
-                        { key: "SMTP_USER", value: smtpUser.trim() },
-                        { key: "SMTP_PASSWORD", value: smtpPassword },
-                        { key: "EMAIL_FROM", value: emailFrom.trim() },
-                        { key: "EMAIL_TO", value: emailTo.trim() },
-                      ];
-                      for (const s of settings) {
-                        await client.apiCall.invoke({
-                          url: `/api/v1/admin/settings/backend/${s.key}`,
-                          method: "PUT",
-                          data: { value: s.value },
-                        });
-                      }
-                      setMailMsg({ type: "success", text: "Настройки почты сохранены. Перезапустите приложение для применения изменений." });
+                      await client.apiCall.invoke({
+                        url: "/api/v1/admin/smtp",
+                        method: "PUT",
+                        data: {
+                          smtp_host: smtpHost.trim(),
+                          smtp_port: smtpPort.trim(),
+                          smtp_user: smtpUser.trim(),
+                          smtp_password: smtpPassword,
+                          email_from: emailFrom.trim(),
+                          email_to: emailTo.trim(),
+                        },
+                      });
+                      setMailMsg({ type: "success", text: "Настройки почты сохранены и применены немедленно." });
                     } catch (err: any) {
                       const detail = err?.response?.data?.detail || err?.message || "Ошибка сохранения";
                       setMailMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка сохранения настроек почты" });

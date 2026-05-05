@@ -83,3 +83,7 @@
 - [x] Add SMTP/EMAIL env vars to settings router for admin panel management
 - [x] Run py_compile on changed Python files, lint and build frontend
 - [x] Add Mail Settings (SMTP) controls to Admin Настройки tab — SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
+- [x] Create backend SMTP settings router (routers/smtp_settings.py) — database-persisted SMTP config via app_configs table
+- [x] Update Admin.tsx SMTP save to use new /api/v1/admin/smtp PUT endpoint (single request instead of 6 separate calls)
+- [x] Wire smtp_settings router to update email service in-memory cache on save (immediate effect without restart)
+- [x] Run py_compile on changed Python files, lint and build frontend

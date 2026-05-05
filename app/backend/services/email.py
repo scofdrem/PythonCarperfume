@@ -1,7 +1,8 @@
 """Email service using Python's built-in smtplib — no third-party libraries required.
 
-Relies on server-side SMTP configuration via environment variables:
-  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
+SMTP configuration is loaded from the database (app_configs table) first,
+falling back to environment variables. This ensures settings persist across
+redeployments.
 """
 
 import logging
@@ -14,9 +15,15 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# In-memory cache for SMTP config (refreshed on save or startup)
+_smtp_cache: dict = {}
+
 
 def _get_smtp_config() -> dict:
-    """Read SMTP configuration from environment variables."""
+    """Read SMTP configuration from cache, then environment variables."""
+    if _smtp_cache:
+        return _smtp_cache.copy()
+
     return {
         "host": os.environ.get("SMTP_HOST", ""),
         "port": int(os.environ.get("SMTP_PORT", "587")),
@@ -25,6 +32,38 @@ def _get_smtp_config() -> dict:
         "from_addr": os.environ.get("EMAIL_FROM", os.environ.get("SMTP_USER", "")),
         "to_addr": os.environ.get("EMAIL_TO", ""),
     }
+
+
+def update_smtp_cache(
+    host: str = "",
+    port: str = "",
+    user: str = "",
+    password: str = "",
+    from_addr: str = "",
+    to_addr: str = "",
+) -> None:
+    """Update the in-memory SMTP cache with new values."""
+    _smtp_cache.clear()
+    if host:
+        _smtp_cache["host"] = host
+    if port:
+        _smtp_cache["port"] = int(port)
+    else:
+        _smtp_cache["port"] = 587
+    _smtp_cache["user"] = user
+    _smtp_cache["password"] = password
+    _smtp_cache["from_addr"] = from_addr or user
+    _smtp_cache["to_addr"] = to_addr
+
+    # Also update env vars for any code that reads them directly
+    os.environ["SMTP_HOST"] = host
+    os.environ["SMTP_PORT"] = port or "587"
+    os.environ["SMTP_USER"] = user
+    os.environ["SMTP_PASSWORD"] = password
+    os.environ["EMAIL_FROM"] = from_addr or user
+    os.environ["EMAIL_TO"] = to_addr
+
+    logger.info("SMTP cache updated from database")
 
 
 def _is_configured() -> bool:
@@ -154,3 +193,48 @@ async def send_inquiry_notification(
     except Exception as e:
         logger.error("Failed to send inquiry notification email: %s", e)
         return False
+
+
+async def initialize_smtp_from_db() -> None:
+    """Load SMTP configuration from database into cache at startup.
+
+    This ensures email service works immediately after app restart
+    without needing to re-enter SMTP settings.
+    """
+    try:
+        from core.database import async_session
+        from models.app_configs import App_configs
+        from sqlalchemy import select
+
+        SMTP_KEYS = {
+            "smtp_host": "SMTP_HOST",
+            "smtp_port": "SMTP_PORT",
+            "smtp_user": "SMTP_USER",
+            "smtp_password": "SMTP_PASSWORD",
+            "email_from": "EMAIL_FROM",
+            "email_to": "EMAIL_TO",
+        }
+
+        values = {}
+        async with async_session() as db:
+            for key in SMTP_KEYS:
+                result = await db.execute(
+                    select(App_configs).where(App_configs.config_key == key)
+                )
+                config = result.scalar_one_or_none()
+                values[key] = config.config_value if config else ""
+
+        if any(values.values()):
+            update_smtp_cache(
+                host=values.get("smtp_host", ""),
+                port=values.get("smtp_port", ""),
+                user=values.get("smtp_user", ""),
+                password=values.get("smtp_password", ""),
+                from_addr=values.get("email_from", ""),
+                to_addr=values.get("email_to", ""),
+            )
+            logger.info("SMTP configuration loaded from database")
+        else:
+            logger.info("No SMTP configuration found in database, using env vars")
+    except Exception as e:
+        logger.warning(f"Could not load SMTP config from database: {e}")
