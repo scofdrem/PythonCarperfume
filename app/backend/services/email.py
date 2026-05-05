@@ -202,7 +202,7 @@ async def initialize_smtp_from_db() -> None:
     without needing to re-enter SMTP settings.
     """
     try:
-        from core.database import async_session
+        from core.database import db_manager
         from models.app_configs import App_configs
         from sqlalchemy import select
 
@@ -215,8 +215,12 @@ async def initialize_smtp_from_db() -> None:
             "email_to": "EMAIL_TO",
         }
 
+        if not db_manager.async_session_maker:
+            logger.warning("Database session maker not available, skipping SMTP init from DB")
+            return
+
         values = {}
-        async with async_session() as db:
+        async with db_manager.async_session_maker() as db:
             for key in SMTP_KEYS:
                 result = await db.execute(
                     select(App_configs).where(App_configs.config_key == key)
