@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
 
 # MODULE_IMPORTS_START
+import models  # noqa: F401 — ensure all model classes register with Base.metadata before create_all()
 from services.database import initialize_database, close_database
 from services.mock_data import initialize_mock_data
 from services.auth import initialize_admin_user

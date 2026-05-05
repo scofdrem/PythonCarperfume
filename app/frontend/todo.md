@@ -87,3 +87,6 @@
 - [x] Update Admin.tsx SMTP save to use new /api/v1/admin/smtp PUT endpoint (single request instead of 6 separate calls)
 - [x] Wire smtp_settings router to update email service in-memory cache on save (immediate effect without restart)
 - [x] Run py_compile on changed Python files, lint and build frontend
+- [x] Fix models/__init__.py — import all model classes so Base.metadata.create_all() registers tables
+- [x] Add `import models` to main.py MODULE_IMPORTS_START so tables are created before app starts
+- [x] Run py_compile on changed Python files, lint and build frontend
