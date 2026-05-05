@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,12 +9,18 @@ import Catalogue from './pages/Catalogue';
 import Admin from './pages/Admin';
 import AuthCallback from './pages/AuthCallback';
 import AuthError from './pages/AuthError';
+import { initSiteContentFromBackend } from '@/data/siteContent';
 // MODULE_IMPORTS_START
 // MODULE_IMPORTS_END
 
 const queryClient = new QueryClient();
 
-const AppRoutes = () => (
+const AppRoutes = () => {
+  useEffect(() => {
+    initSiteContentFromBackend();
+  }, []);
+
+  return (
   <Routes>
     <Route path="/" element={<Index />} />
     <Route path="/catalogue" element={<Catalogue />} />
@@ -24,7 +31,8 @@ const AppRoutes = () => (
     {/* MODULE_ROUTES_START */}
     {/* MODULE_ROUTES_END */}
   </Routes>
-);
+  );
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

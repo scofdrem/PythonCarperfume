@@ -1,23 +1,23 @@
 {
-    "title": "site_content",
+    "title": "brands",
     "type": "object",
     "properties": {
         "id": {
             "type": "integer",
             "description": "Primary key, auto-increment"
         },
-        "content_key": {
+        "name": {
             "type": "string",
-            "description": "Unique key identifying the content section"
+            "description": "Brand name"
         },
-        "content_value": {
+        "slug": {
             "type": "string",
-            "description": "JSON string of the content for this section",
-            "default": "{}"
+            "description": "URL-friendly slug"
         }
     },
     "required": [
         "id",
-        "content_key"
+        "name",
+        "slug"
     ]
 }

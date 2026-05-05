@@ -28,7 +28,7 @@
         },
         "volumes": {
             "type": "string",
-            "description": "Comma-separated volume values"
+            "description": "Available volumes as JSON array string"
         },
         "image": {
             "type": "string",
@@ -44,12 +44,12 @@
         },
         "is_new": {
             "type": "boolean",
-            "description": "Is new arrival",
+            "description": "Whether product is new",
             "default": false
         },
         "is_featured": {
             "type": "boolean",
-            "description": "Is featured/hit",
+            "description": "Whether product is featured",
             "default": false
         }
     },

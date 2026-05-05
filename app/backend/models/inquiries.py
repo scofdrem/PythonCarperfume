@@ -3,12 +3,16 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
 
-class Site_content(Base):
-    __tablename__ = "site_content"
+class Inquiries(Base):
+    __tablename__ = "inquiries"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    content_key = Column(String, nullable=False)
-    content_value = Column(String, nullable=True, default='{}', server_default='{}')
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    phone = Column(String, nullable=True)
+    message = Column(String, nullable=True)
+    product_name = Column(String, nullable=True)
+    product_brand = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)

@@ -9,32 +9,32 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
-from services.site_content import Site_contentService
+from services.brands import BrandsService
 
 # Set up logging
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/entities/site_content", tags=["site_content"])
+router = APIRouter(prefix="/api/v1/entities/brands", tags=["brands"])
 
 
 # ---------- Pydantic Schemas ----------
-class Site_contentData(BaseModel):
+class BrandsData(BaseModel):
     """Entity data schema (for create/update)"""
-    content_key: str
-    content_value: str = None
+    name: str
+    slug: str
 
 
-class Site_contentUpdateData(BaseModel):
+class BrandsUpdateData(BaseModel):
     """Update entity data (partial updates allowed)"""
-    content_key: Optional[str] = None
-    content_value: Optional[str] = None
+    name: Optional[str] = None
+    slug: Optional[str] = None
 
 
-class Site_contentResponse(BaseModel):
+class BrandsResponse(BaseModel):
     """Entity response schema"""
     id: int
-    content_key: str
-    content_value: Optional[str] = None
+    name: str
+    slug: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
 
@@ -42,38 +42,38 @@ class Site_contentResponse(BaseModel):
         from_attributes = True
 
 
-class Site_contentListResponse(BaseModel):
+class BrandsListResponse(BaseModel):
     """List response schema"""
-    items: List[Site_contentResponse]
+    items: List[BrandsResponse]
     total: int
     skip: int
     limit: int
 
 
-class Site_contentBatchCreateRequest(BaseModel):
+class BrandsBatchCreateRequest(BaseModel):
     """Batch create request"""
-    items: List[Site_contentData]
+    items: List[BrandsData]
 
 
-class Site_contentBatchUpdateItem(BaseModel):
+class BrandsBatchUpdateItem(BaseModel):
     """Batch update item"""
     id: int
-    updates: Site_contentUpdateData
+    updates: BrandsUpdateData
 
 
-class Site_contentBatchUpdateRequest(BaseModel):
+class BrandsBatchUpdateRequest(BaseModel):
     """Batch update request"""
-    items: List[Site_contentBatchUpdateItem]
+    items: List[BrandsBatchUpdateItem]
 
 
-class Site_contentBatchDeleteRequest(BaseModel):
+class BrandsBatchDeleteRequest(BaseModel):
     """Batch delete request"""
     ids: List[int]
 
 
 # ---------- Routes ----------
-@router.get("", response_model=Site_contentListResponse)
-async def query_site_contents(
+@router.get("", response_model=BrandsListResponse)
+async def query_brandss(
     query: str = Query(None, description="Query conditions (JSON string)"),
     sort: str = Query(None, description="Sort field (prefix with '-' for descending)"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -81,10 +81,10 @@ async def query_site_contents(
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Query site_contents with filtering, sorting, and pagination"""
-    logger.debug(f"Querying site_contents: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
+    """Query brandss with filtering, sorting, and pagination"""
+    logger.debug(f"Querying brandss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         # Parse query JSON if provided
         query_dict = None
@@ -100,17 +100,17 @@ async def query_site_contents(
             query_dict=query_dict,
             sort=sort,
         )
-        logger.debug(f"Found {result['total']} site_contents")
+        logger.debug(f"Found {result['total']} brandss")
         return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error querying site_contents: {str(e)}", exc_info=True)
+        logger.error(f"Error querying brandss: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.get("/all", response_model=Site_contentListResponse)
-async def query_site_contents_all(
+@router.get("/all", response_model=BrandsListResponse)
+async def query_brandss_all(
     query: str = Query(None, description="Query conditions (JSON string)"),
     sort: str = Query(None, description="Sort field (prefix with '-' for descending)"),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
@@ -118,10 +118,10 @@ async def query_site_contents_all(
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
 ):
-    # Query site_contents with filtering, sorting, and pagination without user limitation
-    logger.debug(f"Querying site_contents: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
+    # Query brandss with filtering, sorting, and pagination without user limitation
+    logger.debug(f"Querying brandss: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
 
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         # Parse query JSON if provided
         query_dict = None
@@ -137,72 +137,72 @@ async def query_site_contents_all(
             query_dict=query_dict,
             sort=sort
         )
-        logger.debug(f"Found {result['total']} site_contents")
+        logger.debug(f"Found {result['total']} brandss")
         return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error querying site_contents: {str(e)}", exc_info=True)
+        logger.error(f"Error querying brandss: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.get("/{id}", response_model=Site_contentResponse)
-async def get_site_content(
+@router.get("/{id}", response_model=BrandsResponse)
+async def get_brands(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single site_content by ID"""
-    logger.debug(f"Fetching site_content with id: {id}, fields={fields}")
+    """Get a single brands by ID"""
+    logger.debug(f"Fetching brands with id: {id}, fields={fields}")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         result = await service.get_by_id(id)
         if not result:
-            logger.warning(f"Site_content with id {id} not found")
-            raise HTTPException(status_code=404, detail="Site_content not found")
+            logger.warning(f"Brands with id {id} not found")
+            raise HTTPException(status_code=404, detail="Brands not found")
         
         return result
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error fetching site_content {id}: {str(e)}", exc_info=True)
+        logger.error(f"Error fetching brands {id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.post("", response_model=Site_contentResponse, status_code=201)
-async def create_site_content(
-    data: Site_contentData,
+@router.post("", response_model=BrandsResponse, status_code=201)
+async def create_brands(
+    data: BrandsData,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new site_content"""
-    logger.debug(f"Creating new site_content with data: {data}")
+    """Create a new brands"""
+    logger.debug(f"Creating new brands with data: {data}")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         result = await service.create(data.model_dump())
         if not result:
-            raise HTTPException(status_code=400, detail="Failed to create site_content")
+            raise HTTPException(status_code=400, detail="Failed to create brands")
         
-        logger.info(f"Site_content created successfully with id: {result.id}")
+        logger.info(f"Brands created successfully with id: {result.id}")
         return result
     except ValueError as e:
-        logger.error(f"Validation error creating site_content: {str(e)}")
+        logger.error(f"Validation error creating brands: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error creating site_content: {str(e)}", exc_info=True)
+        logger.error(f"Error creating brands: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-@router.post("/batch", response_model=List[Site_contentResponse], status_code=201)
-async def create_site_contents_batch(
-    request: Site_contentBatchCreateRequest,
+@router.post("/batch", response_model=List[BrandsResponse], status_code=201)
+async def create_brandss_batch(
+    request: BrandsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Create multiple site_contents in a single request"""
-    logger.debug(f"Batch creating {len(request.items)} site_contents")
+    """Create multiple brandss in a single request"""
+    logger.debug(f"Batch creating {len(request.items)} brandss")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     results = []
     
     try:
@@ -211,7 +211,7 @@ async def create_site_contents_batch(
             if result:
                 results.append(result)
         
-        logger.info(f"Batch created {len(results)} site_contents successfully")
+        logger.info(f"Batch created {len(results)} brandss successfully")
         return results
     except Exception as e:
         await db.rollback()
@@ -219,15 +219,15 @@ async def create_site_contents_batch(
         raise HTTPException(status_code=500, detail=f"Batch create failed: {str(e)}")
 
 
-@router.put("/batch", response_model=List[Site_contentResponse])
-async def update_site_contents_batch(
-    request: Site_contentBatchUpdateRequest,
+@router.put("/batch", response_model=List[BrandsResponse])
+async def update_brandss_batch(
+    request: BrandsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Update multiple site_contents in a single request"""
-    logger.debug(f"Batch updating {len(request.items)} site_contents")
+    """Update multiple brandss in a single request"""
+    logger.debug(f"Batch updating {len(request.items)} brandss")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     results = []
     
     try:
@@ -238,7 +238,7 @@ async def update_site_contents_batch(
             if result:
                 results.append(result)
         
-        logger.info(f"Batch updated {len(results)} site_contents successfully")
+        logger.info(f"Batch updated {len(results)} brandss successfully")
         return results
     except Exception as e:
         await db.rollback()
@@ -246,45 +246,45 @@ async def update_site_contents_batch(
         raise HTTPException(status_code=500, detail=f"Batch update failed: {str(e)}")
 
 
-@router.put("/{id}", response_model=Site_contentResponse)
-async def update_site_content(
+@router.put("/{id}", response_model=BrandsResponse)
+async def update_brands(
     id: int,
-    data: Site_contentUpdateData,
+    data: BrandsUpdateData,
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an existing site_content"""
-    logger.debug(f"Updating site_content {id} with data: {data}")
+    """Update an existing brands"""
+    logger.debug(f"Updating brands {id} with data: {data}")
 
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         # Only include non-None values for partial updates
         update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
         result = await service.update(id, update_dict)
         if not result:
-            logger.warning(f"Site_content with id {id} not found for update")
-            raise HTTPException(status_code=404, detail="Site_content not found")
+            logger.warning(f"Brands with id {id} not found for update")
+            raise HTTPException(status_code=404, detail="Brands not found")
         
-        logger.info(f"Site_content {id} updated successfully")
+        logger.info(f"Brands {id} updated successfully")
         return result
     except HTTPException:
         raise
     except ValueError as e:
-        logger.error(f"Validation error updating site_content {id}: {str(e)}")
+        logger.error(f"Validation error updating brands {id}: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error updating site_content {id}: {str(e)}", exc_info=True)
+        logger.error(f"Error updating brands {id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.delete("/batch")
-async def delete_site_contents_batch(
-    request: Site_contentBatchDeleteRequest,
+async def delete_brandss_batch(
+    request: BrandsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete multiple site_contents by their IDs"""
-    logger.debug(f"Batch deleting {len(request.ids)} site_contents")
+    """Delete multiple brandss by their IDs"""
+    logger.debug(f"Batch deleting {len(request.ids)} brandss")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     deleted_count = 0
     
     try:
@@ -293,8 +293,8 @@ async def delete_site_contents_batch(
             if success:
                 deleted_count += 1
         
-        logger.info(f"Batch deleted {deleted_count} site_contents successfully")
-        return {"message": f"Successfully deleted {deleted_count} site_contents", "deleted_count": deleted_count}
+        logger.info(f"Batch deleted {deleted_count} brandss successfully")
+        return {"message": f"Successfully deleted {deleted_count} brandss", "deleted_count": deleted_count}
     except Exception as e:
         await db.rollback()
         logger.error(f"Error in batch delete: {str(e)}", exc_info=True)
@@ -302,24 +302,24 @@ async def delete_site_contents_batch(
 
 
 @router.delete("/{id}")
-async def delete_site_content(
+async def delete_brands(
     id: int,
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a single site_content by ID"""
-    logger.debug(f"Deleting site_content with id: {id}")
+    """Delete a single brands by ID"""
+    logger.debug(f"Deleting brands with id: {id}")
     
-    service = Site_contentService(db)
+    service = BrandsService(db)
     try:
         success = await service.delete(id)
         if not success:
-            logger.warning(f"Site_content with id {id} not found for deletion")
-            raise HTTPException(status_code=404, detail="Site_content not found")
+            logger.warning(f"Brands with id {id} not found for deletion")
+            raise HTTPException(status_code=404, detail="Brands not found")
         
-        logger.info(f"Site_content {id} deleted successfully")
-        return {"message": "Site_content deleted successfully", "id": id}
+        logger.info(f"Brands {id} deleted successfully")
+        return {"message": "Brands deleted successfully", "id": id}
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting site_content {id}: {str(e)}", exc_info=True)
+        logger.error(f"Error deleting brands {id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")

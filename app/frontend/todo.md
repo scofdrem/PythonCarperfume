@@ -66,3 +66,9 @@
 - [x] Add "Уточнить наличие" button to ProductCard.tsx with modal integration
 - [x] Remove price/priceRange from product data, ProductCard, Catalogue sort, and Admin form
 - [x] Run lint and build, fix any issues
+- [x] Create src/api/dataService.ts — API service for fetching/saving products, categories, brands, site content, inquiries
+- [x] Create backend models (products, categories, site_content, inquiries) and services
+- [x] Create backend routers (products, categories, site_content, inquiries, migration)
+- [x] Wire site content persistence: fetchSiteContent/saveSiteContent in dataService.ts
+- [x] Add initSiteContentFromBackend to App.tsx for loading content on startup
+- [x] Run lint and build, fix any issues

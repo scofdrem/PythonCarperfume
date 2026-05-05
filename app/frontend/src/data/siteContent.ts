@@ -115,10 +115,12 @@ export const defaultSiteContent: SiteContent = {
 };
 
 // Reactive store — components subscribe via useSiteContent hook
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchSiteContent, saveSiteContent as saveToBackend } from "@/api/dataService";
 
 let currentContent: SiteContent = { ...defaultSiteContent };
 const listeners: Set<() => void> = new Set();
+let backendLoaded = false;
 
 export function getSiteContent(): SiteContent {
   return currentContent;
@@ -129,14 +131,39 @@ export function setSiteContent(content: SiteContent) {
   listeners.forEach((fn) => fn());
 }
 
+/** Load site content from backend into the reactive store (call once on app init) */
+export async function initSiteContentFromBackend(): Promise<void> {
+  if (backendLoaded) return;
+  try {
+    const data = await fetchSiteContent();
+    if (data) {
+      currentContent = { ...data };
+      listeners.forEach((fn) => fn());
+    }
+  } catch {
+    // Fall back to defaults
+  }
+  backendLoaded = true;
+}
+
+/** Save site content to both the reactive store and the backend database */
+export async function persistSiteContent(content: SiteContent): Promise<boolean> {
+  setSiteContent(content);
+  try {
+    return await saveToBackend(content);
+  } catch {
+    return false;
+  }
+}
+
 export function useSiteContent(): SiteContent {
   const [content, setContent] = useState<SiteContent>(currentContent);
-  useState(() => {
+  useEffect(() => {
     const handler = () => setContent({ ...currentContent });
     listeners.add(handler);
     return () => {
       listeners.delete(handler);
     };
-  });
+  }, []);
   return content;
 }

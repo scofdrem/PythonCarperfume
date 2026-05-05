@@ -7,6 +7,7 @@ import { rebuildBrandsFromProducts } from "@/data/brandsStore";
 import {
   useSiteContent,
   setSiteContent,
+  persistSiteContent,
   type SiteContent,
   type AboutCard,
 } from "@/data/siteContent";
@@ -372,9 +373,17 @@ export default function Admin() {
     setSaved(false);
   };
 
-  const saveContent = () => {
-    setSiteContent(draft);
-    setSaved(true);
+  const [saving, setSaving] = useState(false);
+
+  const saveContent = async () => {
+    setSaving(true);
+    const ok = await persistSiteContent(draft);
+    setSaving(false);
+    setSaved(ok);
+    if (!ok) {
+      // Still update local state even if backend save fails
+      setSiteContent(draft);
+    }
     setTimeout(() => setSaved(false), 2000);
   };
 

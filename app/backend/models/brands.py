@@ -3,12 +3,12 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Integer, String
 
 
-class Site_content(Base):
-    __tablename__ = "site_content"
+class Brands(Base):
+    __tablename__ = "brands"
     __table_args__ = {"extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True, nullable=False)
-    content_key = Column(String, nullable=False)
-    content_value = Column(String, nullable=True, default='{}', server_default='{}')
+    name = Column(String, nullable=False)
+    slug = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), default=datetime.now)
     updated_at = Column(DateTime(timezone=True), default=datetime.now, onupdate=datetime.now)
