@@ -61,3 +61,7 @@
 - [x] Switch Footer.tsx from static brands import to useDynamicBrands hook
 - [x] Catalogue.tsx already uses useDynamicBrands (confirmed)
 - [x] Run lint and build, fix any issues
+- [x] Create backend inquiry router (routers/inquiry.py) — POST /api/v1/inquiry/submit
+- [x] Create InquiryModal.tsx — feedback inquiry modal with form
+- [x] Add "Уточнить наличие" button to ProductCard.tsx with modal integration
+- [x] Run lint and build, fix any issues

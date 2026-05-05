@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { ChevronDown, Instagram } from "lucide-react";
+import { ChevronDown, Instagram, MessageCircle } from "lucide-react";
 import type { Product } from "@/data/products";
+import InquiryModal from "./InquiryModal";
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +12,7 @@ export default function ProductCard({ product }: ProductCardProps) {
     product.volumes[Math.min(2, product.volumes.length - 1)]
   );
   const [accordionOpen, setAccordionOpen] = useState(false);
+  const [inquiryOpen, setInquiryOpen] = useState(false);
 
   const getPriceForVolume = (vol: number): number => {
     const minVol = product.volumes?.[0] ?? vol;
@@ -79,6 +81,15 @@ export default function ProductCard({ product }: ProductCardProps) {
           </span>
         </div>
 
+        {/* Inquiry button */}
+        <button
+          onClick={() => setInquiryOpen(true)}
+          className="w-full flex items-center justify-center gap-2 bg-[#C69B56]/10 border border-[#C69B56]/30 text-[#C69B56] text-xs tracking-wide py-2.5 mb-3 hover:bg-[#C69B56]/20 hover:border-[#C69B56]/50 transition-colors"
+        >
+          <MessageCircle size={14} />
+          Уточнить наличие
+        </button>
+
         {/* Accordion toggle */}
         <button
           onClick={() => setAccordionOpen(!accordionOpen)}
@@ -122,6 +133,14 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </div>
+
+      {/* Inquiry Modal */}
+      <InquiryModal
+        product={product}
+        selectedVolume={selectedVolume}
+        isOpen={inquiryOpen}
+        onClose={() => setInquiryOpen(false)}
+      />
     </div>
   );
 }
