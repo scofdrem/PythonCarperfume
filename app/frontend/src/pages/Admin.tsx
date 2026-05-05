@@ -279,6 +279,16 @@ export default function Admin() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
+  // Mail (SMTP) settings state
+  const [smtpHost, setSmtpHost] = useState("");
+  const [smtpPort, setSmtpPort] = useState("");
+  const [smtpUser, setSmtpUser] = useState("");
+  const [smtpPassword, setSmtpPassword] = useState("");
+  const [emailFrom, setEmailFrom] = useState("");
+  const [emailTo, setEmailTo] = useState("");
+  const [mailLoading, setMailLoading] = useState(false);
+  const [mailMsg, setMailMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
   // Categories management state — from reactive store
   const [categoryList, setCategoryList] = useState<Category[]>([...storeCategories]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -415,6 +425,29 @@ export default function Admin() {
     };
     loadAccount();
     loadFeedbackEmail();
+
+    // Load SMTP/Mail settings from backend env vars
+    const loadMailSettings = async () => {
+      try {
+        const res = await client.apiCall.invoke({
+          url: "/api/v1/admin/settings",
+          method: "GET",
+          data: {},
+        });
+        if (res.data?.backend_vars) {
+          const bv = res.data.backend_vars;
+          setSmtpHost(bv.SMTP_HOST?.value || "");
+          setSmtpPort(bv.SMTP_PORT?.value || "");
+          setSmtpUser(bv.SMTP_USER?.value || "");
+          setSmtpPassword(bv.SMTP_PASSWORD?.value || "");
+          setEmailFrom(bv.EMAIL_FROM?.value || "");
+          setEmailTo(bv.EMAIL_TO?.value || "");
+        }
+      } catch {
+        // silently fail - user may not be authenticated
+      }
+    };
+    loadMailSettings();
   }, []);
 
   const updateDraft = (updater: (prev: SiteContent) => SiteContent) => {
@@ -2521,6 +2554,146 @@ export default function Admin() {
                 >
                   <Save size={12} />
                   {feedbackLoading ? "Сохранение..." : "Сохранить"}
+                </button>
+              </div>
+            </div>
+
+            {/* Mail (SMTP) Settings */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6">
+              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-2">
+                Настройки почты (SMTP)
+              </h4>
+              <p className="text-white/30 text-xs mb-4">
+                Конфигурация SMTP-сервера для отправки email-уведомлений о новых заявках
+              </p>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">SMTP_HOST</label>
+                  <input
+                    type="text"
+                    value={smtpHost}
+                    onChange={(e) => {
+                      setSmtpHost(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="smtp.gmail.com"
+                  />
+                  <span className="text-white/20 text-[10px]">Адрес SMTP-сервера</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">SMTP_PORT</label>
+                  <input
+                    type="text"
+                    value={smtpPort}
+                    onChange={(e) => {
+                      setSmtpPort(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="587"
+                  />
+                  <span className="text-white/20 text-[10px]">Порт (587 — TLS, 465 — SSL)</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">SMTP_USER</label>
+                  <input
+                    type="text"
+                    value={smtpUser}
+                    onChange={(e) => {
+                      setSmtpUser(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="your-email@gmail.com"
+                  />
+                  <span className="text-white/20 text-[10px]">Логин SMTP-сервера</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">SMTP_PASSWORD</label>
+                  <input
+                    type="password"
+                    value={smtpPassword}
+                    onChange={(e) => {
+                      setSmtpPassword(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="••••••••"
+                  />
+                  <span className="text-white/20 text-[10px]">Пароль или app-specific пароль</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">EMAIL_FROM</label>
+                  <input
+                    type="email"
+                    value={emailFrom}
+                    onChange={(e) => {
+                      setEmailFrom(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="noreply@example.com"
+                  />
+                  <span className="text-white/20 text-[10px]">Адрес отправителя уведомлений</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">EMAIL_TO</label>
+                  <input
+                    type="email"
+                    value={emailTo}
+                    onChange={(e) => {
+                      setEmailTo(e.target.value);
+                      setMailMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="admin@example.com"
+                  />
+                  <span className="text-white/20 text-[10px]">Адрес получателя уведомлений о заявках</span>
+                </div>
+              </div>
+
+              {mailMsg && (
+                <div className={`flex items-center gap-2 mt-4 text-xs ${mailMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {mailMsg.type === "success" ? <Check size={14} /> : <AlertCircle size={14} />}
+                  {mailMsg.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={async () => {
+                    setMailLoading(true);
+                    setMailMsg(null);
+                    try {
+                      const settings = [
+                        { key: "SMTP_HOST", value: smtpHost.trim() },
+                        { key: "SMTP_PORT", value: smtpPort.trim() },
+                        { key: "SMTP_USER", value: smtpUser.trim() },
+                        { key: "SMTP_PASSWORD", value: smtpPassword },
+                        { key: "EMAIL_FROM", value: emailFrom.trim() },
+                        { key: "EMAIL_TO", value: emailTo.trim() },
+                      ];
+                      for (const s of settings) {
+                        await client.apiCall.invoke({
+                          url: `/api/v1/admin/settings/backend/${s.key}`,
+                          method: "PUT",
+                          data: { value: s.value },
+                        });
+                      }
+                      setMailMsg({ type: "success", text: "Настройки почты сохранены. Перезапустите приложение для применения изменений." });
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.detail || err?.message || "Ошибка сохранения";
+                      setMailMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка сохранения настроек почты" });
+                    } finally {
+                      setMailLoading(false);
+                    }
+                  }}
+                  disabled={mailLoading}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save size={12} />
+                  {mailLoading ? "Сохранение..." : "Сохранить"}
                 </button>
               </div>
             </div>

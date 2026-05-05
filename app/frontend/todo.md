@@ -82,3 +82,4 @@
 - [x] Wire inquiry router to send admin email notification after DB save
 - [x] Add SMTP/EMAIL env vars to settings router for admin panel management
 - [x] Run py_compile on changed Python files, lint and build frontend
+- [x] Add Mail Settings (SMTP) controls to Admin Настройки tab — SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, EMAIL_FROM, EMAIL_TO
