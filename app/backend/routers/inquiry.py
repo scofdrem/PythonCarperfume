@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from models.inquiries import Inquiries
+from services.email import send_inquiry_notification
 
 router = APIRouter(prefix="/api/v1/inquiry", tags=["inquiry"])
 
@@ -30,7 +31,7 @@ class InquiryResponse(BaseModel):
 
 @router.post("/submit", response_model=InquiryResponse)
 async def submit_inquiry(data: InquiryRequest, db: AsyncSession = Depends(get_db)):
-    """Submit a product availability inquiry and save to database."""
+    """Submit a product availability inquiry, save to database, and notify admin via email."""
     try:
         logger.info(
             "New inquiry: product=%s brand=%s volume=%s name=%s telegram=%s email=%s contact_method=%s message=%s",
@@ -58,6 +59,22 @@ async def submit_inquiry(data: InquiryRequest, db: AsyncSession = Depends(get_db
         await db.refresh(inquiry)
 
         logger.info(f"Inquiry saved to database with id: {inquiry.id}")
+
+        # Send email notification (non-blocking — failure does not affect the response)
+        email_sent = await send_inquiry_notification(
+            product_name=data.product_name,
+            product_brand=data.product_brand,
+            volume=data.volume,
+            customer_name=data.customer_name,
+            telegram=data.telegram,
+            customer_email=data.customer_email,
+            contact_method=data.contact_method,
+            message=data.message,
+        )
+        if email_sent:
+            logger.info("Admin notification email sent for inquiry %d", inquiry.id)
+        else:
+            logger.warning("Admin notification email not sent for inquiry %d (SMTP not configured or send failed)", inquiry.id)
 
         return InquiryResponse(
             success=True,

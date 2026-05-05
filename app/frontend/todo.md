@@ -78,3 +78,7 @@
 - [x] Update Admin.tsx ImageUpload — upload files to cloud storage instead of base64
 - [x] Update HomeSections.tsx — use StorageImage for banner display
 - [x] Run lint and build, fix any issues
+- [x] Create backend email service (services/email.py) — SMTP-based notification using smtplib
+- [x] Wire inquiry router to send admin email notification after DB save
+- [x] Add SMTP/EMAIL env vars to settings router for admin panel management
+- [x] Run py_compile on changed Python files, lint and build frontend

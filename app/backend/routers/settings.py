@@ -89,6 +89,12 @@ async def get_settings(current_user: UserResponse = Depends(get_admin_user)):
             "JWT_EXPIRE_MINUTES": "JWT expiration time (minutes)",
             "ADMIN_USER_ID": "Admin user ID",
             "ADMIN_USER_EMAIL": "Admin user email",
+            "SMTP_HOST": "SMTP server host (e.g. smtp.gmail.com)",
+            "SMTP_PORT": "SMTP server port (e.g. 587 for TLS, 465 for SSL)",
+            "SMTP_USER": "SMTP login username",
+            "SMTP_PASSWORD": "SMTP login password or app-specific password",
+            "EMAIL_FROM": "Sender email address for notifications",
+            "EMAIL_TO": "Recipient email address for inquiry notifications",
         }
 
         frontend_descriptions = {"VITE_API_BASE_URL": "Base API URL", "VITE_FRONTEND_URL": "Frontend URL"}
