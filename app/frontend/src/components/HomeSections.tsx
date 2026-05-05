@@ -123,21 +123,26 @@ export function About() {
           <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
         </div>
 
-        {/* Info cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
-          {about.cards.map((item, i) => (
-            <div
+        {/* Banners */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          {about.banners.map((banner, i) => (
+            <a
               key={i}
-              className="text-center p-6 bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/20 transition-colors duration-300"
+              href={banner.link}
+              className="group relative aspect-[4/3] overflow-hidden bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/30 transition-all duration-300"
             >
-              <div className="text-3xl mb-4">{item.icon}</div>
-              <h3 className="text-white text-sm font-medium tracking-wide mb-2">
-                {item.title}
-              </h3>
-              <p className="text-white/40 text-xs leading-relaxed">
-                {item.desc}
-              </p>
-            </div>
+              <img
+                src={banner.image}
+                alt={banner.title}
+                className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              <div className="relative z-10 h-full flex flex-col justify-end p-5">
+                <h3 className="text-white text-sm font-medium tracking-wide">
+                  {banner.title}
+                </h3>
+              </div>
+            </a>
           ))}
         </div>
 

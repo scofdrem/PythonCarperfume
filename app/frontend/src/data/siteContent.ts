@@ -1,10 +1,10 @@
 // Centralized editable site content — Admin panel modifies these values
 // Components read from here to reflect admin changes
 
-export interface AboutCard {
-  icon: string;
+export interface Banner {
   title: string;
-  desc: string;
+  link: string;
+  image: string;
 }
 
 export interface SiteContent {
@@ -24,7 +24,7 @@ export interface SiteContent {
     about: string;
   };
   about: {
-    cards: AboutCard[];
+    banners: Banner[];
     title: string;
     description1: string;
     description2: string;
@@ -66,26 +66,26 @@ export const defaultSiteContent: SiteContent = {
     about: "О нас",
   },
   about: {
-    cards: [
+    banners: [
       {
-        icon: "🧪",
         title: "Оригинальная продукция",
-        desc: "Все отливанты создаются исключительно из оригинальных флаконов с сертификатами подлинности",
+        link: "/catalogue",
+        image: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&q=80",
       },
       {
-        icon: "📦",
         title: "Безопасная упаковка",
-        desc: "Каждый отливант разливается в стерильные стеклянные флаконы с распылителем",
+        link: "/catalogue",
+        image: "https://images.unsplash.com/photo-1587017539504-67cfbddac569?w=600&q=80",
       },
       {
-        icon: "🚚",
         title: "Доставка по Беларуси",
-        desc: "Отправляем заказы в любой город Беларуси. Бесплатная доставка от 100 BYN",
+        link: "/catalogue",
+        image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80",
       },
       {
-        icon: "💎",
         title: "Более 950 ароматов",
-        desc: "Нишевая, люксовая и селективная парфюмерия от мировых брендов",
+        link: "/catalogue",
+        image: "https://images.unsplash.com/photo-1594035910387-fbd1a485b12e?w=600&q=80",
       },
     ],
     title: "1000 Ароматов",

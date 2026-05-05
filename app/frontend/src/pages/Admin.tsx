@@ -9,7 +9,7 @@ import {
   setSiteContent,
   persistSiteContent,
   type SiteContent,
-  type AboutCard,
+  type Banner,
 } from "@/data/siteContent";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -475,38 +475,38 @@ export default function Admin() {
     setProductList((prev) => prev.filter((p) => p.id !== id));
   };
 
-  // About card helpers
-  const updateAboutCard = (
+  // Banner helpers
+  const updateBanner = (
     index: number,
-    field: keyof AboutCard,
+    field: keyof Banner,
     value: string
   ) => {
     updateDraft((prev) => {
-      const cards = [...prev.about.cards];
-      cards[index] = { ...cards[index], [field]: value };
-      return { ...prev, about: { ...prev.about, cards } };
+      const banners = [...prev.about.banners];
+      banners[index] = { ...banners[index], [field]: value };
+      return { ...prev, about: { ...prev.about, banners } };
     });
   };
 
-  const addAboutCard = () => {
+  const addBanner = () => {
     updateDraft((prev) => ({
       ...prev,
       about: {
         ...prev.about,
-        cards: [
-          ...prev.about.cards,
-          { icon: "✨", title: "Новый блок", desc: "Описание блока" },
+        banners: [
+          ...prev.about.banners,
+          { title: "Новый баннер", link: "/catalogue", image: "" },
         ],
       },
     }));
   };
 
-  const removeAboutCard = (index: number) => {
+  const removeBanner = (index: number) => {
     updateDraft((prev) => ({
       ...prev,
       about: {
         ...prev.about,
-        cards: prev.about.cards.filter((_, i) => i !== index),
+        banners: prev.about.banners.filter((_, i) => i !== index),
       },
     }));
   };
@@ -1456,57 +1456,87 @@ export default function Admin() {
               Редактирование секции «О нас»
             </h3>
 
-            {/* Info Cards */}
+            {/* Banners */}
             <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase">
-                  Карточки преимуществ
+                  Баннеры
                 </h4>
                 <button
-                  onClick={addAboutCard}
+                  onClick={addBanner}
                   className="text-[#C69B56] text-xs tracking-wide hover:text-[#d4aa65] transition-colors"
                 >
-                  + Добавить карточку
+                  + Добавить баннер
                 </button>
               </div>
 
               <div className="space-y-4">
-                {draft.about.cards.map((card, i) => (
+                {draft.about.banners.map((banner, i) => (
                   <div
                     key={i}
                     className="bg-black border border-white/5 p-4"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-white/30 text-[10px] uppercase tracking-wider">
-                        Карточка {i + 1}
+                        Баннер {i + 1}
                       </span>
                       <button
-                        onClick={() => removeAboutCard(i)}
+                        onClick={() => removeBanner(i)}
                         className="text-white/30 hover:text-red-400 text-xs transition-colors"
                       >
                         Удалить
                       </button>
                     </div>
-                    <div className="grid sm:grid-cols-3 gap-3">
-                      <Field
-                        label="Иконка (эмодзи)"
-                        value={card.icon}
-                        onChange={(v) => updateAboutCard(i, "icon", v)}
-                      />
+                    <div className="grid sm:grid-cols-2 gap-4">
                       <Field
                         label="Заголовок"
-                        value={card.title}
-                        onChange={(v) => updateAboutCard(i, "title", v)}
+                        value={banner.title}
+                        onChange={(v) => updateBanner(i, "title", v)}
                       />
                       <Field
-                        label="Описание"
-                        value={card.desc}
-                        onChange={(v) => updateAboutCard(i, "desc", v)}
+                        label="Ссылка (URL)"
+                        value={banner.link}
+                        onChange={(v) => updateBanner(i, "link", v)}
+                        placeholder="/catalogue или https://..."
                       />
+                      <div className="sm:col-span-2">
+                        <ImageUpload
+                          label="Изображение баннера"
+                          value={banner.image}
+                          onChange={(v) => updateBanner(i, "image", v)}
+                        />
+                      </div>
                     </div>
+                    {/* Banner preview */}
+                    {banner.image && (
+                      <div className="mt-3 border border-white/5 overflow-hidden">
+                        <p className="text-white/20 text-[10px] uppercase tracking-wider px-3 py-1 bg-black/50">
+                          Предпросмотр
+                        </p>
+                        <div className="relative aspect-[4/3] overflow-hidden">
+                          <img
+                            src={banner.image}
+                            alt={banner.title}
+                            className="w-full h-full object-cover opacity-50"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <span className="text-white text-sm font-medium tracking-wide">
+                              {banner.title}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
+
+              {draft.about.banners.length === 0 && (
+                <div className="text-center py-6">
+                  <p className="text-white/30 text-xs">Нет баннеров. Нажмите «+ Добавить баннер» чтобы создать.</p>
+                </div>
+              )}
             </div>
 
             {/* About Details */}
