@@ -72,3 +72,9 @@
 - [x] Wire site content persistence: fetchSiteContent/saveSiteContent in dataService.ts
 - [x] Add initSiteContentFromBackend to App.tsx for loading content on startup
 - [x] Run lint and build, fix any issues
+- [x] Create site-images storage bucket for cloud image uploads
+- [x] Create src/utils/storage.ts — upload/resolve helpers for ObjectStorage
+- [x] Create src/components/StorageImage.tsx — async image resolver for storage:// URLs
+- [x] Update Admin.tsx ImageUpload — upload files to cloud storage instead of base64
+- [x] Update HomeSections.tsx — use StorageImage for banner display
+- [x] Run lint and build, fix any issues

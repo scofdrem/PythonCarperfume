@@ -5,6 +5,7 @@ import {
   newProducts,
 } from "@/data/products";
 import { useSiteContent } from "@/data/siteContent";
+import { StorageImage } from "./StorageImage";
 import ProductCard from "./ProductCard";
 
 export function CategoryGrid() {
@@ -133,7 +134,7 @@ export function About() {
               href={banner.link}
               className="group relative aspect-[4/3] overflow-hidden bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/30 transition-all duration-300"
             >
-              <img
+              <StorageImage
                 src={banner.image}
                 alt={banner.title}
                 className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-500"

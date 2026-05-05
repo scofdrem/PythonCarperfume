@@ -35,26 +35,61 @@ interface AdminUser {
   created_at: string | null;
 }
 
-/* ─── Image Upload Helper ─── */
+/* ─── Image Upload Helper (with cloud storage) ─── */
 function ImageUpload({
   value,
   onChange,
   label,
+  folder = "banners",
 }: {
   value: string;
   onChange: (url: string) => void;
   label: string;
+  folder?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>("");
 
-  const handleFile = (file: File) => {
+  // Resolve preview URL for display
+  useEffect(() => {
+    if (!value) {
+      setPreviewUrl("");
+      return;
+    }
+    if (value.startsWith("http://") || value.startsWith("https://") || value.startsWith("data:")) {
+      setPreviewUrl(value);
+      return;
+    }
+    if (value.startsWith("storage://")) {
+      // Resolve storage URL asynchronously
+      import("@/utils/storage").then(({ resolveImageUrl }) => {
+        resolveImageUrl(value).then((url) => setPreviewUrl(url));
+      });
+      return;
+    }
+    setPreviewUrl(value);
+  }, [value]);
+
+  const handleFile = async (file: File) => {
     if (!file.type.startsWith("image/")) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      if (e.target?.result) onChange(e.target.result as string);
-    };
-    reader.readAsDataURL(file);
+    setUploading(true);
+    try {
+      const { uploadImage } = await import("@/utils/storage");
+      const result = await uploadImage(file, folder);
+      onChange(result.url);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      // Fallback to base64 if upload fails
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) onChange(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -68,7 +103,7 @@ function ImageUpload({
     <div>
       <label className="block text-white/40 text-xs mb-1">{label}</label>
       <div
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !uploading && inputRef.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
@@ -76,15 +111,22 @@ function ImageUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`relative border border-dashed cursor-pointer transition-colors overflow-hidden ${
-          dragOver
+          uploading
+            ? "border-[#C69B56]/50 bg-[#C69B56]/5"
+            : dragOver
             ? "border-[#C69B56] bg-[#C69B56]/5"
             : "border-white/20 hover:border-white/40"
-        } ${value ? "h-40" : "h-24 flex items-center justify-center"}`}
+        } ${previewUrl ? "h-40" : "h-24 flex items-center justify-center"}`}
       >
-        {value ? (
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2 text-[#C69B56]">
+            <div className="w-5 h-5 border-2 border-[#C69B56]/30 border-t-[#C69B56] rounded-full animate-spin" />
+            <span className="text-[10px]">Загрузка...</span>
+          </div>
+        ) : previewUrl ? (
           <>
             <img
-              src={value}
+              src={previewUrl}
               alt="Preview"
               className="w-full h-full object-cover"
             />
@@ -92,6 +134,7 @@ function ImageUpload({
               onClick={(e) => {
                 e.stopPropagation();
                 onChange("");
+                setPreviewUrl("");
               }}
               className="absolute top-2 right-2 w-6 h-6 bg-black/70 flex items-center justify-center text-white/70 hover:text-white"
             >
@@ -113,12 +156,14 @@ function ImageUpload({
         onChange={(e) => {
           const file = e.target.files?.[0];
           if (file) handleFile(file);
+          // Reset input so same file can be re-selected
+          e.target.value = "";
         }}
       />
       {/* Fallback URL input */}
       <div className="mt-1">
         <input
-          value={value && !value.startsWith("data:") ? value : ""}
+          value={value && !value.startsWith("data:") && !value.startsWith("storage://") ? value : ""}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Или вставьте URL изображения"
           className="w-full bg-black border border-white/10 text-white text-xs px-3 py-1.5 focus:border-[#C69B56] outline-none placeholder:text-white/20"
