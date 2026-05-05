@@ -8,11 +8,11 @@
         },
         "content_key": {
             "type": "string",
-            "description": "Unique key identifying the content section"
+            "description": "Unique key for the content item"
         },
         "content_value": {
             "type": "string",
-            "description": "JSON string of the content for this section",
+            "description": "JSON string of content value",
             "default": "{}"
         }
     },

@@ -1,8 +1,11 @@
 import logging
-import os
 
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, EmailStr, Field
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.database import get_db
+from models.inquiries import Inquiries
 
 router = APIRouter(prefix="/api/v1/inquiry", tags=["inquiry"])
 
@@ -26,10 +29,9 @@ class InquiryResponse(BaseModel):
 
 
 @router.post("/submit", response_model=InquiryResponse)
-async def submit_inquiry(data: InquiryRequest):
-    """Submit a product availability inquiry."""
+async def submit_inquiry(data: InquiryRequest, db: AsyncSession = Depends(get_db)):
+    """Submit a product availability inquiry and save to database."""
     try:
-        # Log the inquiry for admin review
         logger.info(
             "New inquiry: product=%s brand=%s volume=%s name=%s telegram=%s email=%s contact_method=%s message=%s",
             data.product_name,
@@ -42,14 +44,26 @@ async def submit_inquiry(data: InquiryRequest):
             data.message,
         )
 
-        # In production, you could send an email notification here
-        # using the FEEDBACK_EMAIL configured in settings.
-        # For now, we store it in the log and return success.
+        # Save to database
+        inquiry = Inquiries(
+            name=data.customer_name or "Аноним",
+            email=data.customer_email or (data.telegram or "unknown"),
+            phone=data.telegram,
+            message=data.message,
+            product_name=data.product_name,
+            product_brand=data.product_brand,
+        )
+        db.add(inquiry)
+        await db.commit()
+        await db.refresh(inquiry)
+
+        logger.info(f"Inquiry saved to database with id: {inquiry.id}")
 
         return InquiryResponse(
             success=True,
             message="Ваш запрос успешно отправлен. Мы свяжемся с вами в ближайшее время.",
         )
     except Exception as e:
+        await db.rollback()
         logger.error(f"Inquiry submission error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to submit inquiry: {str(e)}")

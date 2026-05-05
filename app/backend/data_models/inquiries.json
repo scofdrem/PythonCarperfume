@@ -16,7 +16,7 @@
         },
         "phone": {
             "type": "string",
-            "description": "Customer phone number"
+            "description": "Customer phone"
         },
         "message": {
             "type": "string",

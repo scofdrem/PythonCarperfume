@@ -10,6 +10,7 @@ import Admin from './pages/Admin';
 import AuthCallback from './pages/AuthCallback';
 import AuthError from './pages/AuthError';
 import { initSiteContentFromBackend } from '@/data/siteContent';
+import { initProductsFromBackend, initCategoriesFromBackend } from '@/data/productsStore';
 // MODULE_IMPORTS_START
 // MODULE_IMPORTS_END
 
@@ -18,6 +19,8 @@ const queryClient = new QueryClient();
 const AppRoutes = () => {
   useEffect(() => {
     initSiteContentFromBackend();
+    initProductsFromBackend();
+    initCategoriesFromBackend();
   }, []);
 
   return (

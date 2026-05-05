@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
-import { products, categories, ageRanges } from "@/data/products";
+import { ageRanges } from "@/data/products";
+import { useProducts, useCategories } from "@/data/productsStore";
 import { useDynamicBrands } from "@/data/brandsStore";
 import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
@@ -17,6 +18,8 @@ export default function Catalogue() {
   const [brandSearch, setBrandSearch] = useState("");
 
   const { brands } = useDynamicBrands();
+  const products = useProducts();
+  const categories = useCategories();
 
   const selectedCategory = searchParams.get("category") || "";
   const selectedBrand = searchParams.get("brand") || "";

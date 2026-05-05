@@ -16,9 +16,11 @@ class InquiriesService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create(self, data: Dict[str, Any]) -> Optional[Inquiries]:
+    async def create(self, data: Dict[str, Any], user_id: Optional[str] = None) -> Optional[Inquiries]:
         """Create a new inquiries"""
         try:
+            if user_id:
+                data['user_id'] = user_id
             obj = Inquiries(**data)
             self.db.add(obj)
             await self.db.commit()
@@ -30,10 +32,21 @@ class InquiriesService:
             logger.error(f"Error creating inquiries: {str(e)}")
             raise
 
-    async def get_by_id(self, obj_id: int) -> Optional[Inquiries]:
-        """Get inquiries by ID"""
+    async def check_ownership(self, obj_id: int, user_id: str) -> bool:
+        """Check if user owns this record"""
+        try:
+            obj = await self.get_by_id(obj_id, user_id=user_id)
+            return obj is not None
+        except Exception as e:
+            logger.error(f"Error checking ownership for inquiries {obj_id}: {str(e)}")
+            return False
+
+    async def get_by_id(self, obj_id: int, user_id: Optional[str] = None) -> Optional[Inquiries]:
+        """Get inquiries by ID (user can only see their own records)"""
         try:
             query = select(Inquiries).where(Inquiries.id == obj_id)
+            if user_id:
+                query = query.where(Inquiries.user_id == user_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
         except Exception as e:
@@ -44,13 +57,18 @@ class InquiriesService:
         self, 
         skip: int = 0, 
         limit: int = 20, 
+        user_id: Optional[str] = None,
         query_dict: Optional[Dict[str, Any]] = None,
         sort: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """Get paginated list of inquiriess"""
+        """Get paginated list of inquiriess (user can only see their own records)"""
         try:
             query = select(Inquiries)
             count_query = select(func.count(Inquiries.id))
+            
+            if user_id:
+                query = query.where(Inquiries.user_id == user_id)
+                count_query = count_query.where(Inquiries.user_id == user_id)
             
             if query_dict:
                 for field, value in query_dict.items():
@@ -85,15 +103,15 @@ class InquiriesService:
             logger.error(f"Error fetching inquiries list: {str(e)}")
             raise
 
-    async def update(self, obj_id: int, update_data: Dict[str, Any]) -> Optional[Inquiries]:
-        """Update inquiries"""
+    async def update(self, obj_id: int, update_data: Dict[str, Any], user_id: Optional[str] = None) -> Optional[Inquiries]:
+        """Update inquiries (requires ownership)"""
         try:
-            obj = await self.get_by_id(obj_id)
+            obj = await self.get_by_id(obj_id, user_id=user_id)
             if not obj:
                 logger.warning(f"Inquiries {obj_id} not found for update")
                 return None
             for key, value in update_data.items():
-                if hasattr(obj, key):
+                if hasattr(obj, key) and key != 'user_id':
                     setattr(obj, key, value)
 
             await self.db.commit()
@@ -105,10 +123,10 @@ class InquiriesService:
             logger.error(f"Error updating inquiries {obj_id}: {str(e)}")
             raise
 
-    async def delete(self, obj_id: int) -> bool:
-        """Delete inquiries"""
+    async def delete(self, obj_id: int, user_id: Optional[str] = None) -> bool:
+        """Delete inquiries (requires ownership)"""
         try:
-            obj = await self.get_by_id(obj_id)
+            obj = await self.get_by_id(obj_id, user_id=user_id)
             if not obj:
                 logger.warning(f"Inquiries {obj_id} not found for deletion")
                 return False

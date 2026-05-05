@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
 import { createClient } from "@metagptx/web-sdk";
-import { products, categories, type Product, type Category } from "@/data/products";
+import { type Product, type Category } from "@/data/products";
 import { rebuildBrandsFromProducts } from "@/data/brandsStore";
 import {
   useSiteContent,
@@ -11,6 +11,17 @@ import {
   type SiteContent,
   type Banner,
 } from "@/data/siteContent";
+import {
+  useProductStore,
+  addProduct,
+  persistProductUpdate,
+  persistProductDelete,
+  persistBulkProductUpdate,
+  useCategoryStore,
+  addCategory,
+  persistCategoryUpdate,
+  persistCategoryDelete,
+} from "@/data/productsStore";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -218,8 +229,9 @@ export default function Admin() {
   const siteContent = useSiteContent();
   const [activeTab, setActiveTab] = useState<Tab>("products");
 
-  // Products state
-  const [productList, setProductList] = useState<Product[]>(products);
+  // Products state — from reactive store (persisted to backend)
+  const { products: productList } = useProductStore();
+  const { categories: storeCategories } = useCategoryStore();
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [formName, setFormName] = useState("");
@@ -267,8 +279,8 @@ export default function Admin() {
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Categories management state
-  const [categoryList, setCategoryList] = useState<Category[]>([...categories]);
+  // Categories management state — from reactive store
+  const [categoryList, setCategoryList] = useState<Category[]>([...storeCategories]);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showAddCategoryForm, setShowAddCategoryForm] = useState(false);
   const [formCatName, setFormCatName] = useState("");
@@ -323,11 +335,10 @@ export default function Admin() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const applyBulkBrand = () => {
+  const applyBulkBrand = async () => {
     if (!bulkBrandValue.trim()) return;
-    setProductList((prev) =>
-      prev.map((p) => (selectedIds.has(p.id) ? { ...p, brand: bulkBrandValue.trim() } : p))
-    );
+    const ids = Array.from(selectedIds);
+    await persistBulkProductUpdate(ids, { brand: bulkBrandValue.trim() });
     showToast(`Бренд обновлён для ${selectedIds.size} продуктов`);
     setConfirmModal(false);
     setBulkModal(null);
@@ -335,11 +346,10 @@ export default function Admin() {
     clearSelection();
   };
 
-  const applyBulkCategory = () => {
+  const applyBulkCategory = async () => {
     if (!bulkCategoryValue.trim()) return;
-    setProductList((prev) =>
-      prev.map((p) => (selectedIds.has(p.id) ? { ...p, category: bulkCategoryValue.trim() } : p))
-    );
+    const ids = Array.from(selectedIds);
+    await persistBulkProductUpdate(ids, { category: bulkCategoryValue.trim() });
     showToast(`Категория обновлена для ${selectedIds.size} продуктов`);
     setConfirmModal(false);
     setBulkModal(null);
@@ -347,18 +357,12 @@ export default function Admin() {
     clearSelection();
   };
 
-  const applyBulkTags = () => {
-    setProductList((prev) =>
-      prev.map((p) =>
-        selectedIds.has(p.id)
-          ? {
-              ...p,
-              isFeatured: bulkFeatured || undefined,
-              isNew: bulkNew || undefined,
-            }
-          : p
-      )
-    );
+  const applyBulkTags = async () => {
+    const ids = Array.from(selectedIds);
+    await persistBulkProductUpdate(ids, {
+      isFeatured: bulkFeatured || undefined,
+      isNew: bulkNew || undefined,
+    });
     showToast(`Теги обновлены для ${selectedIds.size} продуктов`);
     setConfirmModal(false);
     setBulkModal(null);
@@ -466,7 +470,7 @@ export default function Admin() {
     setShowAddForm(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formName.trim() || !formBrand.trim()) return;
     const volumes = formVolumes
       .split(",")
@@ -474,50 +478,37 @@ export default function Admin() {
       .filter((v) => v > 0);
 
     if (editingProduct) {
-      setProductList((prev) =>
-        prev.map((p) =>
-          p.id === editingProduct.id
-            ? {
-                ...p,
-                name: formName,
-                brand: formBrand,
-                category: formCategory,
-                gender: formGender,
-                ageRange: formAgeRange,
-                volumes,
-                image: formImage || p.image,
-                isFeatured: formFeatured || undefined,
-                isNew: formNew || undefined,
-              }
-            : p
-        )
-      );
+      await persistProductUpdate(editingProduct.id, {
+        name: formName,
+        brand: formBrand,
+        category: formCategory,
+        gender: formGender,
+        ageRange: formAgeRange,
+        volumes,
+        image: formImage || editingProduct.image,
+        isFeatured: formFeatured || undefined,
+        isNew: formNew || undefined,
+      });
     } else {
-      const newId = Math.max(...productList.map((p) => p.id), 0) + 1;
-      setProductList((prev) => [
-        ...prev,
-        {
-          id: newId,
-          name: formName,
-          brand: formBrand,
-          category: formCategory,
-          gender: formGender,
-          ageRange: formAgeRange,
-          volumes,
-
-          image:
-            formImage ||
-            "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
-          isFeatured: formFeatured || undefined,
-          isNew: formNew || undefined,
-        },
-      ]);
+      await addProduct({
+        name: formName,
+        brand: formBrand,
+        category: formCategory,
+        gender: formGender,
+        ageRange: formAgeRange,
+        volumes,
+        image:
+          formImage ||
+          "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
+        isFeatured: formFeatured || undefined,
+        isNew: formNew || undefined,
+      });
     }
     resetForm();
   };
 
-  const handleDelete = (id: number) => {
-    setProductList((prev) => prev.filter((p) => p.id !== id));
+  const handleDelete = async (id: number) => {
+    await persistProductDelete(id);
   };
 
   // Banner helpers
@@ -1166,13 +1157,12 @@ export default function Admin() {
                               onChange={(e) => setRenameValue(e.target.value)}
                               className="bg-black border border-[#C69B56] text-white text-sm px-3 py-1 focus:border-[#C69B56] outline-none w-full"
                               autoFocus
-                              onKeyDown={(e) => {
+                              onKeyDown={async (e) => {
                                 if (e.key === "Enter" && renameValue.trim()) {
-                                  setProductList((prev) =>
-                                    prev.map((p) =>
-                                      p.brand === brand ? { ...p, brand: renameValue.trim() } : p
-                                    )
-                                  );
+                                  const brandProducts = productList.filter((p) => p.brand === brand);
+                                  for (const p of brandProducts) {
+                                    await persistProductUpdate(p.id, { brand: renameValue.trim() });
+                                  }
                                   setRenameBrand(null);
                                 }
                                 if (e.key === "Escape") setRenameBrand(null);
@@ -1192,13 +1182,12 @@ export default function Admin() {
                           {renameBrand === brand ? (
                             <div className="flex items-center justify-end gap-2">
                               <button
-                                onClick={() => {
+                                onClick={async () => {
                                   if (!renameValue.trim()) return;
-                                  setProductList((prev) =>
-                                    prev.map((p) =>
-                                      p.brand === brand ? { ...p, brand: renameValue.trim() } : p
-                                    )
-                                  );
+                                  const brandProducts = productList.filter((p) => p.brand === brand);
+                                  for (const p of brandProducts) {
+                                    await persistProductUpdate(p.id, { brand: renameValue.trim() });
+                                  }
                                   setRenameBrand(null);
                                 }}
                                 className="text-green-400 text-xs hover:text-green-300 transition-colors"
@@ -1218,10 +1207,11 @@ export default function Admin() {
                                 Удалить {count} прод.?
                               </span>
                               <button
-                                onClick={() => {
-                                  setProductList((prev) =>
-                                    prev.filter((p) => p.brand !== brand)
-                                  );
+                                onClick={async () => {
+                                  const brandProducts = productList.filter((p) => p.brand === brand);
+                                  for (const p of brandProducts) {
+                                    await persistProductDelete(p.id);
+                                  }
                                   setDeleteBrandConfirm(null);
                                 }}
                                 className="text-xs px-2 py-1 bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition-colors"
@@ -1899,9 +1889,14 @@ export default function Admin() {
                 </div>
                 <div className="flex gap-3 mt-6">
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!formCatName.trim() || !formCatSlug.trim()) return;
                       if (editingCategory) {
+                        await persistCategoryUpdate(editingCategory.slug, {
+                          name: formCatName.trim(),
+                          slug: formCatSlug.trim(),
+                          image: formCatImage || editingCategory.image,
+                        });
                         setCategoryList((prev) =>
                           prev.map((c) =>
                             c.slug === editingCategory.slug
@@ -1914,16 +1909,16 @@ export default function Admin() {
                           )
                         );
                       } else {
-                        setCategoryList((prev) => [
-                          ...prev,
-                          {
-                            name: formCatName.trim(),
-                            slug: formCatSlug.trim(),
-                            image:
-                              formCatImage ||
-                              "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
-                          },
-                        ]);
+                        const created = await addCategory({
+                          name: formCatName.trim(),
+                          slug: formCatSlug.trim(),
+                          image:
+                            formCatImage ||
+                            "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
+                        });
+                        if (created) {
+                          setCategoryList((prev) => [...prev, created]);
+                        }
                       }
                       setShowAddCategoryForm(false);
                       setEditingCategory(null);
@@ -1997,7 +1992,8 @@ export default function Admin() {
                           Изменить
                         </button>
                         <button
-                          onClick={() => {
+                          onClick={async () => {
+                            await persistCategoryDelete(cat.slug);
                             setCategoryList((prev) =>
                               prev.filter((c) => c.slug !== cat.slug)
                             );

@@ -20,19 +20,19 @@
         },
         "gender": {
             "type": "string",
-            "description": "Gender: women, men, unisex"
+            "description": "Gender classification"
         },
         "age_range": {
             "type": "string",
-            "description": "Age range: 18-25, 25-35, 35-45, 45+"
+            "description": "Age range"
         },
         "volumes": {
             "type": "string",
-            "description": "Available volumes as JSON array string"
+            "description": "Available volumes JSON"
         },
         "image": {
             "type": "string",
-            "description": "Product image URL"
+            "description": "Image URL or storage path"
         },
         "description": {
             "type": "string",
@@ -40,7 +40,7 @@
         },
         "instagram_url": {
             "type": "string",
-            "description": "Instagram URL"
+            "description": "Instagram review URL"
         },
         "is_new": {
             "type": "boolean",

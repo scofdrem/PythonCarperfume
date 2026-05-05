@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from services.inquiries import InquiriesService
+from dependencies.auth import get_current_user
+from schemas.auth import UserResponse
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -91,9 +93,10 @@ async def query_inquiriess(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
     limit: int = Query(20, ge=1, le=2000, description="Max number of records to return"),
     fields: str = Query(None, description="Comma-separated list of fields to return"),
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Query inquiriess with filtering, sorting, and pagination"""
+    """Query inquiriess with filtering, sorting, and pagination (user can only see their own records)"""
     logger.debug(f"Querying inquiriess: query={query}, sort={sort}, skip={skip}, limit={limit}, fields={fields}")
     
     service = InquiriesService(db)
@@ -111,6 +114,7 @@ async def query_inquiriess(
             limit=limit,
             query_dict=query_dict,
             sort=sort,
+            user_id=str(current_user.id),
         )
         logger.debug(f"Found {result['total']} inquiriess")
         return result
@@ -162,14 +166,15 @@ async def query_inquiriess_all(
 async def get_inquiries(
     id: int,
     fields: str = Query(None, description="Comma-separated list of fields to return"),
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get a single inquiries by ID"""
+    """Get a single inquiries by ID (user can only see their own records)"""
     logger.debug(f"Fetching inquiries with id: {id}, fields={fields}")
     
     service = InquiriesService(db)
     try:
-        result = await service.get_by_id(id)
+        result = await service.get_by_id(id, user_id=str(current_user.id))
         if not result:
             logger.warning(f"Inquiries with id {id} not found")
             raise HTTPException(status_code=404, detail="Inquiries not found")
@@ -185,6 +190,7 @@ async def get_inquiries(
 @router.post("", response_model=InquiriesResponse, status_code=201)
 async def create_inquiries(
     data: InquiriesData,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new inquiries"""
@@ -192,7 +198,7 @@ async def create_inquiries(
     
     service = InquiriesService(db)
     try:
-        result = await service.create(data.model_dump())
+        result = await service.create(data.model_dump(), user_id=str(current_user.id))
         if not result:
             raise HTTPException(status_code=400, detail="Failed to create inquiries")
         
@@ -209,6 +215,7 @@ async def create_inquiries(
 @router.post("/batch", response_model=List[InquiriesResponse], status_code=201)
 async def create_inquiriess_batch(
     request: InquiriesBatchCreateRequest,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Create multiple inquiriess in a single request"""
@@ -219,7 +226,7 @@ async def create_inquiriess_batch(
     
     try:
         for item_data in request.items:
-            result = await service.create(item_data.model_dump())
+            result = await service.create(item_data.model_dump(), user_id=str(current_user.id))
             if result:
                 results.append(result)
         
@@ -234,9 +241,10 @@ async def create_inquiriess_batch(
 @router.put("/batch", response_model=List[InquiriesResponse])
 async def update_inquiriess_batch(
     request: InquiriesBatchUpdateRequest,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update multiple inquiriess in a single request"""
+    """Update multiple inquiriess in a single request (requires ownership)"""
     logger.debug(f"Batch updating {len(request.items)} inquiriess")
     
     service = InquiriesService(db)
@@ -246,7 +254,7 @@ async def update_inquiriess_batch(
         for item in request.items:
             # Only include non-None values for partial updates
             update_dict = {k: v for k, v in item.updates.model_dump().items() if v is not None}
-            result = await service.update(item.id, update_dict)
+            result = await service.update(item.id, update_dict, user_id=str(current_user.id))
             if result:
                 results.append(result)
         
@@ -262,16 +270,17 @@ async def update_inquiriess_batch(
 async def update_inquiries(
     id: int,
     data: InquiriesUpdateData,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Update an existing inquiries"""
+    """Update an existing inquiries (requires ownership)"""
     logger.debug(f"Updating inquiries {id} with data: {data}")
 
     service = InquiriesService(db)
     try:
         # Only include non-None values for partial updates
         update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
-        result = await service.update(id, update_dict)
+        result = await service.update(id, update_dict, user_id=str(current_user.id))
         if not result:
             logger.warning(f"Inquiries with id {id} not found for update")
             raise HTTPException(status_code=404, detail="Inquiries not found")
@@ -291,9 +300,10 @@ async def update_inquiries(
 @router.delete("/batch")
 async def delete_inquiriess_batch(
     request: InquiriesBatchDeleteRequest,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete multiple inquiriess by their IDs"""
+    """Delete multiple inquiriess by their IDs (requires ownership)"""
     logger.debug(f"Batch deleting {len(request.ids)} inquiriess")
     
     service = InquiriesService(db)
@@ -301,7 +311,7 @@ async def delete_inquiriess_batch(
     
     try:
         for item_id in request.ids:
-            success = await service.delete(item_id)
+            success = await service.delete(item_id, user_id=str(current_user.id))
             if success:
                 deleted_count += 1
         
@@ -316,14 +326,15 @@ async def delete_inquiriess_batch(
 @router.delete("/{id}")
 async def delete_inquiries(
     id: int,
+    current_user: UserResponse = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Delete a single inquiries by ID"""
+    """Delete a single inquiries by ID (requires ownership)"""
     logger.debug(f"Deleting inquiries with id: {id}")
     
     service = InquiriesService(db)
     try:
-        success = await service.delete(id)
+        success = await service.delete(id, user_id=str(current_user.id))
         if not success:
             logger.warning(f"Inquiries with id {id} not found for deletion")
             raise HTTPException(status_code=404, detail="Inquiries not found")
