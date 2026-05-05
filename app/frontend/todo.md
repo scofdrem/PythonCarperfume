@@ -54,4 +54,6 @@
 - [x] Add Pydantic validation schemas for email, password, and name inputs
 - [x] Secure admin endpoints with get_admin_user dependency
 - [x] Wire frontend Admin.tsx to backend account and feedback email APIs
+- [x] Add CRUD controls for Brands tab in Admin panel (add, edit, delete brands)
+- [x] Add CRUD controls for Categories tab in Admin panel (add, edit, delete categories with image)
 - [x] Run lint and build, fix any issues
