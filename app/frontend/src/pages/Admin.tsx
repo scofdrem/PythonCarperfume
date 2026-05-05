@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
 import { createClient } from "@metagptx/web-sdk";
-import { products, brands, categories, type Product, type Brand, type Category } from "@/data/products";
+import { products, categories, type Product, type Category } from "@/data/products";
 import {
   useSiteContent,
   setSiteContent,
@@ -18,7 +18,6 @@ type Tab =
   | "headings"
   | "about"
   | "footer"
-  | "brands"
   | "categories"
   | "account"
   | "users"
@@ -189,6 +188,9 @@ export default function Admin() {
   const [formFeatured, setFormFeatured] = useState(false);
   const [formNew, setFormNew] = useState(false);
 
+  // Dynamic brands derived from product list
+  const uniqueBrands = [...new Set(productList.map((p) => p.brand))].sort();
+
   // Site content draft state
   const [draft, setDraft] = useState<SiteContent>({ ...siteContent });
   const [saved, setSaved] = useState(false);
@@ -211,13 +213,6 @@ export default function Admin() {
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
-  // Brands management state
-  const [brandList, setBrandList] = useState<Brand[]>([...brands]);
-  const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
-  const [showAddBrandForm, setShowAddBrandForm] = useState(false);
-  const [formBrandName, setFormBrandName] = useState("");
-  const [formBrandSlug, setFormBrandSlug] = useState("");
 
   // Categories management state
   const [categoryList, setCategoryList] = useState<Category[]>([...categories]);
@@ -410,7 +405,6 @@ export default function Admin() {
     { key: "headings", label: "Заголовки" },
     { key: "about", label: "О нас" },
     { key: "footer", label: "Подвал" },
-    { key: "brands", label: "Бренды" },
     { key: "categories", label: "Категории" },
     { key: "account", label: "Аккаунт" },
     { key: "users", label: "Пользователи" },
@@ -490,11 +484,29 @@ export default function Admin() {
                     value={formName}
                     onChange={setFormName}
                   />
-                  <Field
-                    label="Бренд *"
-                    value={formBrand}
-                    onChange={setFormBrand}
-                  />
+                  <div>
+                    <label className="block text-white/40 text-xs mb-1">
+                      Бренд *
+                    </label>
+                    <select
+                      value={formBrand}
+                      onChange={(e) => setFormBrand(e.target.value)}
+                      className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
+                    >
+                      <option value="">— Выберите бренд —</option>
+                      {uniqueBrands.map((b) => (
+                        <option key={b} value={b}>
+                          {b}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={formBrand}
+                      onChange={(e) => setFormBrand(e.target.value)}
+                      placeholder="Или введите новый бренд"
+                      className="w-full bg-black border border-white/10 text-white text-xs px-3 py-1.5 mt-1 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    />
+                  </div>
                   <div>
                     <label className="block text-white/40 text-xs mb-1">
                       Категория
@@ -1196,155 +1208,6 @@ export default function Admin() {
                   </span>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════ */}
-        {/* BRANDS TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "brands" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-white/50 text-sm">
-                {brandList.length} брендов
-              </p>
-              <button
-                onClick={() => {
-                  setEditingBrand(null);
-                  setFormBrandName("");
-                  setFormBrandSlug("");
-                  setShowAddBrandForm(true);
-                }}
-                className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-              >
-                + Добавить бренд
-              </button>
-            </div>
-
-            {/* Add/Edit Brand Form */}
-            {showAddBrandForm && (
-              <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
-                <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
-                  {editingBrand ? "Редактировать бренд" : "Новый бренд"}
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Field
-                    label="Название *"
-                    value={formBrandName}
-                    onChange={(v) => {
-                      setFormBrandName(v);
-                      if (!editingBrand) {
-                        setFormBrandSlug(
-                          v
-                            .toLowerCase()
-                            .replace(/[^a-z0-9а-яё]+/gi, "-")
-                            .replace(/^-|-$/g, "")
-                        );
-                      }
-                    }}
-                    placeholder="Например: Byredo"
-                  />
-                  <Field
-                    label="Slug (URL-идентификатор) *"
-                    value={formBrandSlug}
-                    onChange={setFormBrandSlug}
-                    placeholder="Например: byredo"
-                  />
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => {
-                      if (!formBrandName.trim() || !formBrandSlug.trim()) return;
-                      if (editingBrand) {
-                        setBrandList((prev) =>
-                          prev.map((b) =>
-                            b.slug === editingBrand.slug
-                              ? { name: formBrandName.trim(), slug: formBrandSlug.trim() }
-                              : b
-                          )
-                        );
-                      } else {
-                        setBrandList((prev) => [
-                          ...prev,
-                          { name: formBrandName.trim(), slug: formBrandSlug.trim() },
-                        ]);
-                      }
-                      setShowAddBrandForm(false);
-                      setEditingBrand(null);
-                      setFormBrandName("");
-                      setFormBrandSlug("");
-                    }}
-                    className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                  >
-                    {editingBrand ? "Сохранить" : "Добавить"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddBrandForm(false);
-                      setEditingBrand(null);
-                      setFormBrandName("");
-                      setFormBrandSlug("");
-                    }}
-                    className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                  >
-                    Отмена
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Brand Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
-                    <th className="text-left py-3 px-2">Название</th>
-                    <th className="text-left py-3 px-2">Slug</th>
-                    <th className="text-left py-3 px-2">Продуктов</th>
-                    <th className="text-right py-3 px-2">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {brandList.map((brand) => (
-                    <tr
-                      key={brand.slug}
-                      className="border-b border-white/5 hover:bg-white/[0.02]"
-                    >
-                      <td className="py-3 px-2 text-white/80">{brand.name}</td>
-                      <td className="py-3 px-2 text-white/40 text-xs font-mono">
-                        {brand.slug}
-                      </td>
-                      <td className="py-3 px-2 text-[#C69B56]/60 text-xs">
-                        {productList.filter((p) => p.brand === brand.name).length}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <button
-                          onClick={() => {
-                            setEditingBrand(brand);
-                            setFormBrandName(brand.name);
-                            setFormBrandSlug(brand.slug);
-                            setShowAddBrandForm(true);
-                          }}
-                          className="text-white/40 hover:text-[#C69B56] text-xs mr-3 transition-colors"
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          onClick={() => {
-                            setBrandList((prev) =>
-                              prev.filter((b) => b.slug !== brand.slug)
-                            );
-                          }}
-                          className="text-white/40 hover:text-red-400 text-xs transition-colors"
-                        >
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
