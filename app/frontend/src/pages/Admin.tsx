@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Upload, X } from "lucide-react";
+import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
+import { createClient } from "@metagptx/web-sdk";
 import { products, brands, categories, type Product } from "@/data/products";
 import {
   useSiteContent,
@@ -18,7 +19,9 @@ type Tab =
   | "about"
   | "footer"
   | "brands"
-  | "categories";
+  | "categories"
+  | "account"
+  | "settings";
 
 /* ─── Image Upload Helper ─── */
 function ImageUpload({
@@ -172,8 +175,6 @@ export default function Admin() {
     "18-25" | "25-35" | "35-45" | "45+"
   >("25-35");
   const [formVolumes, setFormVolumes] = useState("2, 5, 10, 20, 30");
-  const [formPriceMin, setFormPriceMin] = useState("10");
-  const [formPriceMax, setFormPriceMax] = useState("500");
   const [formImage, setFormImage] = useState("");
   const [formFeatured, setFormFeatured] = useState(false);
   const [formNew, setFormNew] = useState(false);
@@ -181,6 +182,61 @@ export default function Admin() {
   // Site content draft state
   const [draft, setDraft] = useState<SiteContent>({ ...siteContent });
   const [saved, setSaved] = useState(false);
+
+  // Account management state
+  const client = createClient();
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountName, setAccountName] = useState("");
+  const [accountRole, setAccountRole] = useState("");
+  const [accountLoading, setAccountLoading] = useState(false);
+  const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordMsg, setPasswordMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Feedback email state
+  const [feedbackEmail, setFeedbackEmail] = useState("");
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Load account data on mount
+  useEffect(() => {
+    const loadAccount = async () => {
+      try {
+        const res = await client.apiCall.invoke({
+          url: "/api/v1/admin/account",
+          method: "GET",
+          data: {},
+        });
+        if (res.data) {
+          setAccountEmail(res.data.email || "");
+          setAccountName(res.data.name || "");
+          setAccountRole(res.data.role || "");
+        }
+      } catch {
+        // silently fail - user may not be authenticated
+      }
+    };
+    const loadFeedbackEmail = async () => {
+      try {
+        const res = await client.apiCall.invoke({
+          url: "/api/v1/admin/account/feedback-email",
+          method: "GET",
+          data: {},
+        });
+        if (res.data) {
+          setFeedbackEmail(res.data.email || "");
+        }
+      } catch {
+        // silently fail
+      }
+    };
+    loadAccount();
+    loadFeedbackEmail();
+  }, []);
 
   const updateDraft = (updater: (prev: SiteContent) => SiteContent) => {
     setDraft((prev) => updater(prev));
@@ -206,8 +262,6 @@ export default function Admin() {
     setFormGender("unisex");
     setFormAgeRange("25-35");
     setFormVolumes("2, 5, 10, 20, 30");
-    setFormPriceMin("10");
-    setFormPriceMax("500");
     setFormImage("");
     setFormFeatured(false);
     setFormNew(false);
@@ -223,8 +277,6 @@ export default function Admin() {
     setFormGender(p.gender);
     setFormAgeRange(p.ageRange);
     setFormVolumes(p.volumes.join(", "));
-    setFormPriceMin(String(p.priceRange[0]));
-    setFormPriceMax(String(p.priceRange[1]));
     setFormImage(p.image);
     setFormFeatured(!!p.isFeatured);
     setFormNew(!!p.isNew);
@@ -237,10 +289,6 @@ export default function Admin() {
       .split(",")
       .map((v) => Number(v.trim()))
       .filter((v) => v > 0);
-    const priceRange: [number, number] = [
-      Number(formPriceMin) || 0,
-      Number(formPriceMax) || 0,
-    ];
 
     if (editingProduct) {
       setProductList((prev) =>
@@ -254,7 +302,6 @@ export default function Admin() {
                 gender: formGender,
                 ageRange: formAgeRange,
                 volumes,
-                priceRange,
                 image: formImage || p.image,
                 isFeatured: formFeatured || undefined,
                 isNew: formNew || undefined,
@@ -274,7 +321,7 @@ export default function Admin() {
           gender: formGender,
           ageRange: formAgeRange,
           volumes,
-          priceRange,
+          priceRange: [0, 0] as [number, number],
           image:
             formImage ||
             "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
@@ -334,6 +381,8 @@ export default function Admin() {
     { key: "footer", label: "Подвал" },
     { key: "brands", label: "Бренды" },
     { key: "categories", label: "Категории" },
+    { key: "account", label: "Аккаунт" },
+    { key: "settings", label: "Настройки" },
   ];
 
   return (
@@ -477,18 +526,7 @@ export default function Admin() {
                     value={formVolumes}
                     onChange={setFormVolumes}
                   />
-                  <Field
-                    label="Цена от (BYN)"
-                    value={formPriceMin}
-                    onChange={setFormPriceMin}
-                    type="number"
-                  />
-                  <Field
-                    label="Цена до (BYN)"
-                    value={formPriceMax}
-                    onChange={setFormPriceMax}
-                    type="number"
-                  />
+
                   <ImageUpload
                     label="Изображение"
                     value={formImage}
@@ -541,7 +579,6 @@ export default function Admin() {
                     <th className="text-left py-3 px-2">Название</th>
                     <th className="text-left py-3 px-2">Бренд</th>
                     <th className="text-left py-3 px-2">Категория</th>
-                    <th className="text-left py-3 px-2">Цена</th>
                     <th className="text-left py-3 px-2">Теги</th>
                     <th className="text-right py-3 px-2">Действия</th>
                   </tr>
@@ -557,9 +594,6 @@ export default function Admin() {
                       <td className="py-3 px-2 text-white/50">{p.brand}</td>
                       <td className="py-3 px-2 text-white/50">
                         {p.category}
-                      </td>
-                      <td className="py-3 px-2 text-white/50">
-                        {p.priceRange[0]}–{p.priceRange[1]} BYN
                       </td>
                       <td className="py-3 px-2">
                         <div className="flex gap-1">
@@ -1181,6 +1215,313 @@ export default function Admin() {
                   </span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* ACCOUNT TAB */}
+        {/* ═══════════════════════════════════════════ */}
+        {activeTab === "account" && (
+          <div>
+            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
+              Управление аккаунтом
+            </h3>
+
+            {/* Account Info */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
+                Информация аккаунта
+              </h4>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={accountEmail}
+                    onChange={(e) => {
+                      setAccountEmail(e.target.value);
+                      setAccountMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="admin@example.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Имя</label>
+                  <input
+                    type="text"
+                    value={accountName}
+                    onChange={(e) => {
+                      setAccountName(e.target.value);
+                      setAccountMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="Имя администратора"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Роль</label>
+                  <input
+                    type="text"
+                    value={accountRole}
+                    disabled
+                    className="w-full bg-black/50 border border-white/5 text-white/30 text-sm px-3 py-2 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {accountMsg && (
+                <div className={`flex items-center gap-2 mt-4 text-xs ${accountMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {accountMsg.type === "success" ? <Check size={14} /> : <AlertCircle size={14} />}
+                  {accountMsg.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={async () => {
+                    setAccountLoading(true);
+                    setAccountMsg(null);
+                    try {
+                      // Validate email format
+                      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                      if (!emailRegex.test(accountEmail.trim())) {
+                        setAccountMsg({ type: "error", text: "Введите корректный email адрес" });
+                        setAccountLoading(false);
+                        return;
+                      }
+                      await client.apiCall.invoke({
+                        url: "/api/v1/admin/account/email",
+                        method: "PUT",
+                        data: { email: accountEmail.trim().toLowerCase() },
+                      });
+                      if (accountName.trim()) {
+                        await client.apiCall.invoke({
+                          url: "/api/v1/admin/account/name",
+                          method: "PUT",
+                          data: { name: accountName.trim() },
+                        });
+                      }
+                      setAccountMsg({ type: "success", text: "Данные аккаунта обновлены" });
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.detail || err?.message || "Ошибка обновления";
+                      setAccountMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка обновления аккаунта" });
+                    } finally {
+                      setAccountLoading(false);
+                    }
+                  }}
+                  disabled={accountLoading}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save size={12} />
+                  {accountLoading ? "Сохранение..." : "Сохранить"}
+                </button>
+              </div>
+            </div>
+
+            {/* Password Change */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6">
+              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
+                Смена пароля
+              </h4>
+              <div className="bg-[#C69B56]/5 border border-[#C69B56]/20 p-3 mb-4">
+                <p className="text-[#C69B56]/80 text-xs">
+                  Аутентификация управляется через внешний провайдер (OIDC). Для смены пароля используйте интерфейс провайдера авторизации.
+                </p>
+              </div>
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Текущий пароль</label>
+                  <input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => {
+                      setCurrentPassword(e.target.value);
+                      setPasswordMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Новый пароль</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => {
+                      setNewPassword(e.target.value);
+                      setPasswordMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="Минимум 8 символов"
+                  />
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Подтвердите пароль</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => {
+                      setConfirmPassword(e.target.value);
+                      setPasswordMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="Повторите пароль"
+                  />
+                </div>
+              </div>
+
+              {newPassword && (
+                <div className="mt-3 space-y-1">
+                  <div className={`text-[10px] flex items-center gap-1 ${newPassword.length >= 8 ? "text-green-400" : "text-white/30"}`}>
+                    <span>{newPassword.length >= 8 ? "✓" : "○"}</span> Минимум 8 символов
+                  </div>
+                  <div className={`text-[10px] flex items-center gap-1 ${/[A-Za-z]/.test(newPassword) ? "text-green-400" : "text-white/30"}`}>
+                    <span>{/[A-Za-z]/.test(newPassword) ? "✓" : "○"}</span> Хотя бы одна буква
+                  </div>
+                  <div className={`text-[10px] flex items-center gap-1 ${/[0-9]/.test(newPassword) ? "text-green-400" : "text-white/30"}`}>
+                    <span>{/[0-9]/.test(newPassword) ? "✓" : "○"}</span> Хотя бы одна цифра
+                  </div>
+                  {confirmPassword && (
+                    <div className={`text-[10px] flex items-center gap-1 ${newPassword === confirmPassword ? "text-green-400" : "text-red-400"}`}>
+                      <span>{newPassword === confirmPassword ? "✓" : "○"}</span> Пароли совпадают
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {passwordMsg && (
+                <div className={`flex items-center gap-2 mt-4 text-xs ${passwordMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {passwordMsg.type === "success" ? <Check size={14} /> : <AlertCircle size={14} />}
+                  {passwordMsg.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={async () => {
+                    setPasswordMsg(null);
+                    // Client-side validation
+                    if (!currentPassword) {
+                      setPasswordMsg({ type: "error", text: "Введите текущий пароль" });
+                      return;
+                    }
+                    if (newPassword.length < 8) {
+                      setPasswordMsg({ type: "error", text: "Пароль должен содержать минимум 8 символов" });
+                      return;
+                    }
+                    if (!/[A-Za-z]/.test(newPassword)) {
+                      setPasswordMsg({ type: "error", text: "Пароль должен содержать хотя бы одну букву" });
+                      return;
+                    }
+                    if (!/[0-9]/.test(newPassword)) {
+                      setPasswordMsg({ type: "error", text: "Пароль должен содержать хотя бы одну цифру" });
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setPasswordMsg({ type: "error", text: "Пароли не совпадают" });
+                      return;
+                    }
+                    try {
+                      const res = await client.apiCall.invoke({
+                        url: "/api/v1/admin/account/password",
+                        method: "PUT",
+                        data: {
+                          current_password: currentPassword,
+                          new_password: newPassword,
+                          confirm_password: confirmPassword,
+                        },
+                      });
+                      setPasswordMsg({ type: "success", text: res.data?.message || "Запрос на смену пароля обработан" });
+                      setCurrentPassword("");
+                      setNewPassword("");
+                      setConfirmPassword("");
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.detail || err?.message || "Ошибка смены пароля";
+                      setPasswordMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка смены пароля" });
+                    }
+                  }}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors flex items-center gap-2"
+                >
+                  <Save size={12} />
+                  Сменить пароль
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* SETTINGS TAB */}
+        {/* ═══════════════════════════════════════════ */}
+        {activeTab === "settings" && (
+          <div>
+            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
+              Настройки приложения
+            </h3>
+
+            {/* Feedback Email */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-2">
+                Email для обратной связи
+              </h4>
+              <p className="text-white/30 text-xs mb-4">
+                Адрес электронной почты, на который будут поступать заявки и обращения клиентов
+              </p>
+              <div className="max-w-md">
+                <label className="block text-white/40 text-xs mb-1">Email обратной связи</label>
+                <input
+                  type="email"
+                  value={feedbackEmail}
+                  onChange={(e) => {
+                    setFeedbackEmail(e.target.value);
+                    setFeedbackMsg(null);
+                  }}
+                  className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                  placeholder="feedback@example.com"
+                />
+              </div>
+
+              {feedbackMsg && (
+                <div className={`flex items-center gap-2 mt-4 text-xs ${feedbackMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                  {feedbackMsg.type === "success" ? <Check size={14} /> : <AlertCircle size={14} />}
+                  {feedbackMsg.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={async () => {
+                    setFeedbackLoading(true);
+                    setFeedbackMsg(null);
+                    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                    if (!emailRegex.test(feedbackEmail.trim())) {
+                      setFeedbackMsg({ type: "error", text: "Введите корректный email адрес" });
+                      setFeedbackLoading(false);
+                      return;
+                    }
+                    try {
+                      await client.apiCall.invoke({
+                        url: "/api/v1/admin/account/feedback-email",
+                        method: "PUT",
+                        data: { email: feedbackEmail.trim().toLowerCase() },
+                      });
+                      setFeedbackMsg({ type: "success", text: "Email обратной связи обновлён" });
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.detail || err?.message || "Ошибка сохранения";
+                      setFeedbackMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка сохранения настроек" });
+                    } finally {
+                      setFeedbackLoading(false);
+                    }
+                  }}
+                  disabled={feedbackLoading}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  <Save size={12} />
+                  {feedbackLoading ? "Сохранение..." : "Сохранить"}
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -49,3 +49,9 @@
 - [x] Ensure Header (sticky with logo) and Footer render on all pages
 - [x] Wire siteContent data to HeroBanner, HomeSections, Footer components
 - [x] Run lint and build, fix any issues
+- [x] Create backend router for admin account management (email, name, password update)
+- [x] Create backend endpoint for feedback email settings (GET/PUT)
+- [x] Add Pydantic validation schemas for email, password, and name inputs
+- [x] Secure admin endpoints with get_admin_user dependency
+- [x] Wire frontend Admin.tsx to backend account and feedback email APIs
+- [x] Run lint and build, fix any issues
