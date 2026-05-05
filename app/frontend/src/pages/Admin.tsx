@@ -228,6 +228,97 @@ export default function Admin() {
   const [usersMsg, setUsersMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // Bulk edit state
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkModal, setBulkModal] = useState<null | "brand" | "category" | "tags">(null);
+  const [bulkBrandValue, setBulkBrandValue] = useState("");
+  const [bulkCategoryValue, setBulkCategoryValue] = useState("");
+  const [bulkFeatured, setBulkFeatured] = useState(false);
+  const [bulkNew, setBulkNew] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const selectedCount = selectedIds.size;
+  const allSelected = productList.length > 0 && selectedIds.size === productList.length;
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(productList.map((p) => p.id)));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const applyBulkBrand = () => {
+    if (!bulkBrandValue.trim()) return;
+    setProductList((prev) =>
+      prev.map((p) => (selectedIds.has(p.id) ? { ...p, brand: bulkBrandValue.trim() } : p))
+    );
+    showToast(`Бренд обновлён для ${selectedIds.size} продуктов`);
+    setConfirmModal(false);
+    setBulkModal(null);
+    setBulkBrandValue("");
+    clearSelection();
+  };
+
+  const applyBulkCategory = () => {
+    if (!bulkCategoryValue.trim()) return;
+    setProductList((prev) =>
+      prev.map((p) => (selectedIds.has(p.id) ? { ...p, category: bulkCategoryValue.trim() } : p))
+    );
+    showToast(`Категория обновлена для ${selectedIds.size} продуктов`);
+    setConfirmModal(false);
+    setBulkModal(null);
+    setBulkCategoryValue("");
+    clearSelection();
+  };
+
+  const applyBulkTags = () => {
+    setProductList((prev) =>
+      prev.map((p) =>
+        selectedIds.has(p.id)
+          ? {
+              ...p,
+              isFeatured: bulkFeatured || undefined,
+              isNew: bulkNew || undefined,
+            }
+          : p
+      )
+    );
+    showToast(`Теги обновлены для ${selectedIds.size} продуктов`);
+    setConfirmModal(false);
+    setBulkModal(null);
+    setBulkFeatured(false);
+    setBulkNew(false);
+    clearSelection();
+  };
+
+  // Get current values for selected products (for display in modals)
+  const selectedProducts = productList.filter((p) => selectedIds.has(p.id));
+  const selectedBrands = [...new Set(selectedProducts.map((p) => p.brand))];
+  const selectedCategories = [...new Set(selectedProducts.map((p) => p.category))];
+  const hasFeatured = selectedProducts.some((p) => p.isFeatured);
+  const hasNew = selectedProducts.some((p) => p.isNew);
+
+  // Unique categories from product list
+  const uniqueCategories = [...new Set(productList.map((p) => p.category))].sort();
+
   // Load account data on mount
   useEffect(() => {
     const loadAccount = async () => {
@@ -455,9 +546,21 @@ export default function Admin() {
         {/* ═══════════════════════════════════════════ */}
         {activeTab === "products" && (
           <div>
+            {/* Toast */}
+            {toast && (
+              <div className="fixed top-6 right-6 z-50 bg-green-600/90 text-white text-sm px-5 py-3 shadow-lg animate-fade-in" role="alert">
+                {toast}
+              </div>
+            )}
+
             <div className="flex items-center justify-between mb-6">
               <p className="text-white/50 text-sm">
                 {productList.length} продуктов
+                {selectedCount > 0 && (
+                  <span className="ml-2 text-[#C69B56]">
+                    ({selectedCount} выбрано)
+                  </span>
+                )}
               </p>
               <button
                 onClick={() => {
@@ -469,6 +572,263 @@ export default function Admin() {
                 + Добавить продукт
               </button>
             </div>
+
+            {/* Bulk Actions Bar */}
+            {selectedCount > 0 && (
+              <div className="bg-[#1A1A1A] border border-[#C69B56]/30 p-3 mb-4 flex flex-wrap items-center gap-3">
+                <span className="text-[#C69B56] text-xs tracking-wide uppercase font-medium">
+                  Массовые действия:
+                </span>
+                <button
+                  onClick={() => {
+                    setBulkBrandValue(selectedBrands.length === 1 ? selectedBrands[0] : "");
+                    setBulkModal("brand");
+                  }}
+                  className="border border-white/20 text-white/60 text-xs tracking-wide px-3 py-1.5 hover:text-white hover:border-white/40 transition-colors"
+                >
+                  Изменить бренд
+                </button>
+                <button
+                  onClick={() => {
+                    setBulkCategoryValue(selectedCategories.length === 1 ? selectedCategories[0] : "");
+                    setBulkModal("category");
+                  }}
+                  className="border border-white/20 text-white/60 text-xs tracking-wide px-3 py-1.5 hover:text-white hover:border-white/40 transition-colors"
+                >
+                  Изменить категорию
+                </button>
+                <button
+                  onClick={() => {
+                    setBulkFeatured(hasFeatured);
+                    setBulkNew(hasNew);
+                    setBulkModal("tags");
+                  }}
+                  className="border border-white/20 text-white/60 text-xs tracking-wide px-3 py-1.5 hover:text-white hover:border-white/40 transition-colors"
+                >
+                  Изменить теги
+                </button>
+                <button
+                  onClick={clearSelection}
+                  className="ml-auto text-white/30 hover:text-white/60 text-xs transition-colors"
+                >
+                  Снять выделение
+                </button>
+              </div>
+            )}
+
+            {/* Bulk Edit Brand Modal */}
+            {bulkModal === "brand" && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Массовое изменение бренда">
+                <div className="bg-[#1A1A1A] border border-white/10 p-6 w-full max-w-md mx-4">
+                  <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
+                    Массовое изменение бренда
+                  </h3>
+                  <p className="text-white/40 text-xs mb-3">
+                    Текущий бренд:{" "}
+                    <span className="text-white/70">
+                      {selectedBrands.length === 1 ? selectedBrands[0] : "Разные значения"}
+                    </span>
+                  </p>
+                  <label className="block text-white/40 text-xs mb-1">
+                    Новый бренд *
+                  </label>
+                  <select
+                    value={uniqueBrands.includes(bulkBrandValue) ? bulkBrandValue : ""}
+                    onChange={(e) => setBulkBrandValue(e.target.value)}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none mb-2"
+                  >
+                    <option value="">— Выберите бренд —</option>
+                    {uniqueBrands.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    value={uniqueBrands.includes(bulkBrandValue) ? "" : bulkBrandValue}
+                    onChange={(e) => setBulkBrandValue(e.target.value)}
+                    placeholder="Или введите новый бренд"
+                    className="w-full bg-black border border-white/10 text-white text-xs px-3 py-1.5 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                  />
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        if (!bulkBrandValue.trim()) return;
+                        setConfirmModal(true);
+                      }}
+                      disabled={!bulkBrandValue.trim()}
+                      className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Применить
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBulkModal(null);
+                        setBulkBrandValue("");
+                      }}
+                      className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bulk Edit Category Modal */}
+            {bulkModal === "category" && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Массовое изменение категории">
+                <div className="bg-[#1A1A1A] border border-white/10 p-6 w-full max-w-md mx-4">
+                  <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
+                    Массовое изменение категории
+                  </h3>
+                  <p className="text-white/40 text-xs mb-3">
+                    Текущая категория:{" "}
+                    <span className="text-white/70">
+                      {selectedCategories.length === 1 ? selectedCategories[0] : "Разные значения"}
+                    </span>
+                  </p>
+                  <label className="block text-white/40 text-xs mb-1">
+                    Новая категория *
+                  </label>
+                  <select
+                    value={bulkCategoryValue}
+                    onChange={(e) => setBulkCategoryValue(e.target.value)}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
+                  >
+                    <option value="">— Выберите категорию —</option>
+                    {uniqueCategories.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                    <option value="niche">Нишевая</option>
+                    <option value="luxury">Люксовая</option>
+                    <option value="women">Женская</option>
+                    <option value="men">Мужская</option>
+                    <option value="unisex">Унисекс</option>
+                    <option value="decants">Отливанты</option>
+                  </select>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        if (!bulkCategoryValue.trim()) return;
+                        setConfirmModal(true);
+                      }}
+                      disabled={!bulkCategoryValue.trim()}
+                      className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Применить
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBulkModal(null);
+                        setBulkCategoryValue("");
+                      }}
+                      className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Bulk Edit Tags Modal */}
+            {bulkModal === "tags" && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Массовое изменение тегов">
+                <div className="bg-[#1A1A1A] border border-white/10 p-6 w-full max-w-md mx-4">
+                  <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
+                    Массовое изменение тегов
+                  </h3>
+                  <p className="text-white/40 text-xs mb-4">
+                    Текущие теги выбранных продуктов
+                  </p>
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-3 cursor-pointer bg-black border border-white/5 p-3 hover:border-white/20 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={bulkFeatured}
+                        onChange={(e) => setBulkFeatured(e.target.checked)}
+                        className="accent-[#C69B56] w-4 h-4"
+                      />
+                      <div>
+                        <span className="text-white/70 text-sm">Хит продаж</span>
+                        <p className="text-white/30 text-[10px]">
+                          {hasFeatured ? "У некоторых продуктов уже установлен" : "Не установлен"}
+                        </p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer bg-black border border-white/5 p-3 hover:border-white/20 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={bulkNew}
+                        onChange={(e) => setBulkNew(e.target.checked)}
+                        className="accent-[#C69B56] w-4 h-4"
+                      />
+                      <div>
+                        <span className="text-white/70 text-sm">Новинка</span>
+                        <p className="text-white/30 text-[10px]">
+                          {hasNew ? "У некоторых продуктов уже установлен" : "Не установлен"}
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => setConfirmModal(true)}
+                      className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
+                    >
+                      Применить
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBulkModal(null);
+                        setBulkFeatured(false);
+                        setBulkNew(false);
+                      }}
+                      className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {confirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" role="dialog" aria-modal="true" aria-label="Подтверждение">
+                <div className="bg-[#1A1A1A] border border-white/10 p-6 w-full max-w-sm mx-4">
+                  <h3 className="text-white text-sm mb-2">
+                    Подтвердите действие
+                  </h3>
+                  <p className="text-white/50 text-xs mb-6">
+                    {bulkModal === "brand" && `Изменить бренд на «${bulkBrandValue}» для ${selectedCount} продуктов?`}
+                    {bulkModal === "category" && `Изменить категорию на «${bulkCategoryValue}» для ${selectedCount} продуктов?`}
+                    {bulkModal === "tags" && `Обновить теги для ${selectedCount} продуктов?`}
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => {
+                        if (bulkModal === "brand") applyBulkBrand();
+                        else if (bulkModal === "category") applyBulkCategory();
+                        else if (bulkModal === "tags") applyBulkTags();
+                      }}
+                      className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
+                    >
+                      Да, применить
+                    </button>
+                    <button
+                      onClick={() => setConfirmModal(false)}
+                      className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
+                    >
+                      Нет, отмена
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Add/Edit Form */}
             {showAddForm && (
@@ -619,6 +979,15 @@ export default function Admin() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
+                    <th className="text-left py-3 px-2 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={toggleSelectAll}
+                        className="accent-[#C69B56]"
+                        aria-label="Выбрать все"
+                      />
+                    </th>
                     <th className="text-left py-3 px-2">ID</th>
                     <th className="text-left py-3 px-2">Название</th>
                     <th className="text-left py-3 px-2">Бренд</th>
@@ -631,8 +1000,19 @@ export default function Admin() {
                   {productList.map((p) => (
                     <tr
                       key={p.id}
-                      className="border-b border-white/5 hover:bg-white/[0.02]"
+                      className={`border-b border-white/5 hover:bg-white/[0.02] ${
+                        selectedIds.has(p.id) ? "bg-[#C69B56]/5" : ""
+                      }`}
                     >
+                      <td className="py-3 px-2">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(p.id)}
+                          onChange={() => toggleSelect(p.id)}
+                          className="accent-[#C69B56]"
+                          aria-label={`Выбрать ${p.name}`}
+                        />
+                      </td>
                       <td className="py-3 px-2 text-white/30">{p.id}</td>
                       <td className="py-3 px-2 text-white/80">{p.name}</td>
                       <td className="py-3 px-2 text-white/50">{p.brand}</td>
