@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Search, SlidersHorizontal, X } from "lucide-react";
-import { products, brands, categories, ageRanges } from "@/data/products";
+import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
+import { products, categories, ageRanges } from "@/data/products";
+import { useDynamicBrands } from "@/data/brandsStore";
 import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -13,6 +14,9 @@ export default function Catalogue() {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortOption>("popular");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [brandSearch, setBrandSearch] = useState("");
+
+  const { brands } = useDynamicBrands();
 
   const selectedCategory = searchParams.get("category") || "";
   const selectedBrand = searchParams.get("brand") || "";
@@ -169,35 +173,54 @@ export default function Catalogue() {
                   </div>
                 </div>
 
-                {/* Brand filter */}
+                {/* Brand filter — searchable */}
                 <div>
                   <h3 className="text-[#C69B56] text-xs tracking-[0.1em] uppercase mb-3 font-medium">
                     Бренд
                   </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setFilter("brand", "")}
-                      className={`px-3 py-1.5 text-[11px] border transition-colors ${
-                        !selectedBrand
-                          ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
-                          : "border-white/10 text-white/40 hover:border-white/30"
-                      }`}
-                    >
-                      Все
-                    </button>
-                    {brands.slice(0, 12).map((brand) => (
+                  <div className="relative">
+                    <div className="flex items-center gap-2 bg-black border border-white/10 px-3 py-2 mb-2">
+                      <Search size={12} className="text-white/30" />
+                      <input
+                        type="text"
+                        value={brandSearch}
+                        onChange={(e) => setBrandSearch(e.target.value)}
+                        placeholder="Поиск бренда..."
+                        className="bg-transparent text-white text-xs outline-none w-full placeholder:text-white/20"
+                      />
+                      {brandSearch && (
+                        <button onClick={() => setBrandSearch("")}>
+                          <X size={10} className="text-white/30 hover:text-white" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
                       <button
-                        key={brand.slug}
-                        onClick={() => setFilter("brand", brand.slug)}
+                        onClick={() => { setFilter("brand", ""); setBrandSearch(""); }}
                         className={`px-3 py-1.5 text-[11px] border transition-colors ${
-                          selectedBrand === brand.slug
+                          !selectedBrand
                             ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
                             : "border-white/10 text-white/40 hover:border-white/30"
                         }`}
                       >
-                        {brand.name}
+                        Все
                       </button>
-                    ))}
+                      {brands
+                        .filter((b) => !brandSearch || b.name.toLowerCase().includes(brandSearch.toLowerCase()))
+                        .map((brand) => (
+                          <button
+                            key={brand.slug}
+                            onClick={() => { setFilter("brand", brand.slug); setBrandSearch(""); }}
+                            className={`px-3 py-1.5 text-[11px] border transition-colors ${
+                              selectedBrand === brand.slug
+                                ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
+                                : "border-white/10 text-white/40 hover:border-white/30"
+                            }`}
+                          >
+                            {brand.name}
+                          </button>
+                        ))}
+                    </div>
                   </div>
                 </div>
 

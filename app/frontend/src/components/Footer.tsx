@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { brands } from "@/data/products";
+import { useDynamicBrands } from "@/data/brandsStore";
 import { useSiteContent } from "@/data/siteContent";
 
 function TelegramIcon() {
@@ -29,6 +29,7 @@ function InstagramIcon() {
 export default function Footer() {
   const content = useSiteContent();
   const { footer } = content;
+  const { brands } = useDynamicBrands();
 
   return (
     <footer className="bg-[#0A0A0A] border-t border-white/5">

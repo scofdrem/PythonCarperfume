@@ -56,4 +56,8 @@
 - [x] Wire frontend Admin.tsx to backend account and feedback email APIs
 - [x] Add CRUD controls for Brands tab in Admin panel (add, edit, delete brands)
 - [x] Add CRUD controls for Categories tab in Admin panel (add, edit, delete categories with image)
+- [x] Create src/data/brandsStore.ts — dynamic brand store derived from product data with reactive hook
+- [x] Wire Admin.tsx to rebuild brands on every productList change via useEffect
+- [x] Switch Footer.tsx from static brands import to useDynamicBrands hook
+- [x] Catalogue.tsx already uses useDynamicBrands (confirmed)
 - [x] Run lint and build, fix any issues

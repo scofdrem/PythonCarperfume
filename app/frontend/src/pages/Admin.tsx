@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
 import { createClient } from "@metagptx/web-sdk";
 import { products, categories, type Product, type Category } from "@/data/products";
+import { rebuildBrandsFromProducts } from "@/data/brandsStore";
 import {
   useSiteContent,
   setSiteContent,
@@ -190,6 +191,11 @@ export default function Admin() {
 
   // Dynamic brands derived from product list
   const uniqueBrands = [...new Set(productList.map((p) => p.brand))].sort();
+
+  // Rebuild dynamic brand store whenever productList changes
+  useEffect(() => {
+    rebuildBrandsFromProducts(productList);
+  }, [productList]);
 
   // Site content draft state
   const [draft, setDraft] = useState<SiteContent>({ ...siteContent });
