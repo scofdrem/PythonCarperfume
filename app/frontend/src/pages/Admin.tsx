@@ -15,6 +15,7 @@ import Footer from "@/components/Footer";
 
 type Tab =
   | "products"
+  | "brands"
   | "hero"
   | "headings"
   | "about"
@@ -233,6 +234,11 @@ export default function Admin() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersMsg, setUsersMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  // Brand management state
+  const [renameBrand, setRenameBrand] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteBrandConfirm, setDeleteBrandConfirm] = useState<string | null>(null);
 
   // Bulk edit state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -498,6 +504,7 @@ export default function Admin() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "products", label: "Продукты" },
+    { key: "brands", label: "Бренды" },
     { key: "hero", label: "Герой-баннер" },
     { key: "headings", label: "Заголовки" },
     { key: "about", label: "О нас" },
@@ -1058,6 +1065,154 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* BRANDS TAB */}
+        {/* ═══════════════════════════════════════════ */}
+        {activeTab === "brands" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-white/50 text-sm">
+                {uniqueBrands.length} брендов
+              </p>
+            </div>
+
+            {/* Brand Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
+                    <th className="text-left py-3 px-2">Бренд</th>
+                    <th className="text-left py-3 px-2">Slug</th>
+                    <th className="text-left py-3 px-2">Продуктов</th>
+                    <th className="text-right py-3 px-2">Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {uniqueBrands.map((brand) => {
+                    const count = productList.filter((p) => p.brand === brand).length;
+                    const slug = brand
+                      .toLowerCase()
+                      .trim()
+                      .replace(/&/g, "and")
+                      .replace(/[^a-z0-9а-яё]+/gi, "-")
+                      .replace(/^-|-$/g, "");
+                    return (
+                      <tr
+                        key={brand}
+                        className="border-b border-white/5 hover:bg-white/[0.02]"
+                      >
+                        <td className="py-3 px-2 text-white/80 font-medium">
+                          {renameBrand === brand ? (
+                            <input
+                              type="text"
+                              value={renameValue}
+                              onChange={(e) => setRenameValue(e.target.value)}
+                              className="bg-black border border-[#C69B56] text-white text-sm px-3 py-1 focus:border-[#C69B56] outline-none w-full"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && renameValue.trim()) {
+                                  setProductList((prev) =>
+                                    prev.map((p) =>
+                                      p.brand === brand ? { ...p, brand: renameValue.trim() } : p
+                                    )
+                                  );
+                                  setRenameBrand(null);
+                                }
+                                if (e.key === "Escape") setRenameBrand(null);
+                              }}
+                            />
+                          ) : (
+                            brand
+                          )}
+                        </td>
+                        <td className="py-3 px-2 text-white/40 text-xs font-mono">
+                          {slug}
+                        </td>
+                        <td className="py-3 px-2 text-[#C69B56]/60 text-xs">
+                          {count}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          {renameBrand === brand ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => {
+                                  if (!renameValue.trim()) return;
+                                  setProductList((prev) =>
+                                    prev.map((p) =>
+                                      p.brand === brand ? { ...p, brand: renameValue.trim() } : p
+                                    )
+                                  );
+                                  setRenameBrand(null);
+                                }}
+                                className="text-green-400 text-xs hover:text-green-300 transition-colors"
+                              >
+                                Сохранить
+                              </button>
+                              <button
+                                onClick={() => setRenameBrand(null)}
+                                className="text-white/40 text-xs hover:text-white/70 transition-colors"
+                              >
+                                Отмена
+                              </button>
+                            </div>
+                          ) : deleteBrandConfirm === brand ? (
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-red-400/60 text-[10px] mr-1">
+                                Удалить {count} прод.?
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setProductList((prev) =>
+                                    prev.filter((p) => p.brand !== brand)
+                                  );
+                                  setDeleteBrandConfirm(null);
+                                }}
+                                className="text-xs px-2 py-1 bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition-colors"
+                              >
+                                Да
+                              </button>
+                              <button
+                                onClick={() => setDeleteBrandConfirm(null)}
+                                className="text-xs px-2 py-1 border border-white/20 text-white/40 hover:text-white/70 transition-colors"
+                              >
+                                Нет
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                onClick={() => {
+                                  setRenameBrand(brand);
+                                  setRenameValue(brand);
+                                }}
+                                className="text-white/40 hover:text-[#C69B56] text-xs transition-colors"
+                              >
+                                Переименовать
+                              </button>
+                              <button
+                                onClick={() => setDeleteBrandConfirm(brand)}
+                                className="text-white/40 hover:text-red-400 text-xs transition-colors"
+                              >
+                                Удалить
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {uniqueBrands.length === 0 && (
+              <div className="bg-[#1A1A1A] border border-white/10 p-8 text-center">
+                <p className="text-white/30 text-sm">Нет брендов. Добавьте продукты с брендами на вкладке «Продукты».</p>
+              </div>
+            )}
           </div>
         )}
 
