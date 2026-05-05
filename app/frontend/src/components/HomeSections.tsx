@@ -110,7 +110,8 @@ export function NewArrivals() {
 
 export function About() {
   const content = useSiteContent();
-  const { about } = content;
+  const about = content.about || {};
+  const banners = about.banners || [];
 
   return (
     <section id="about" className="py-16 sm:py-24 bg-black">
@@ -118,14 +119,15 @@ export function About() {
         {/* Section title */}
         <div className="text-center mb-12">
           <h2 className="text-2xl sm:text-3xl font-light text-white tracking-[0.1em] uppercase">
-            {content.sectionHeadings.about}
+            {content.sectionHeadings?.about || "О нас"}
           </h2>
           <div className="w-16 h-px bg-[#C69B56] mx-auto mt-4" />
         </div>
 
         {/* Banners */}
+        {banners.length > 0 && (
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {about.banners.map((banner, i) => (
+          {banners.map((banner, i) => (
             <a
               key={i}
               href={banner.link}
@@ -145,6 +147,7 @@ export function About() {
             </a>
           ))}
         </div>
+        )}
 
         {/* About Us description + Map */}
         <div className="grid lg:grid-cols-2 gap-8">

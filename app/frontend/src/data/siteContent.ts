@@ -131,13 +131,33 @@ export function setSiteContent(content: SiteContent) {
   listeners.forEach((fn) => fn());
 }
 
+/** Migrate old about.cards to about.banners if needed */
+function migrateContent(data: Record<string, any>): SiteContent {
+  const about = data.about || {};
+  // If banners missing but cards exist, convert cards → banners
+  if (!about.banners && about.cards) {
+    about.banners = about.cards.map((card: any) => ({
+      title: card.title || "",
+      link: "/catalogue",
+      image: "",
+    }));
+    delete about.cards;
+  }
+  if (!about.banners) {
+    about.banners = defaultSiteContent.about.banners;
+  }
+  data.about = about;
+  // Ensure all top-level keys exist
+  return { ...defaultSiteContent, ...data };
+}
+
 /** Load site content from backend into the reactive store (call once on app init) */
 export async function initSiteContentFromBackend(): Promise<void> {
   if (backendLoaded) return;
   try {
     const data = await fetchSiteContent();
     if (data) {
-      currentContent = { ...data };
+      currentContent = migrateContent(data);
       listeners.forEach((fn) => fn());
     }
   } catch {
