@@ -1,0 +1,17 @@
+{
+    "title": "site_content",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, always 1 for singleton"
+        },
+        "content_json": {
+            "type": "string",
+            "description": "Full site content as JSON string"
+        }
+    },
+    "required": [
+        "id"
+    ]
+}

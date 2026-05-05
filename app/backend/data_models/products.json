@@ -1,0 +1,61 @@
+{
+    "title": "products",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "name": {
+            "type": "string",
+            "description": "Product name"
+        },
+        "brand": {
+            "type": "string",
+            "description": "Brand name"
+        },
+        "category": {
+            "type": "string",
+            "description": "Category slug"
+        },
+        "gender": {
+            "type": "string",
+            "description": "Gender: women, men, unisex"
+        },
+        "age_range": {
+            "type": "string",
+            "description": "Age range: 18-25, 25-35, 35-45, 45+"
+        },
+        "volumes": {
+            "type": "string",
+            "description": "Comma-separated volume values"
+        },
+        "image": {
+            "type": "string",
+            "description": "Product image URL"
+        },
+        "description": {
+            "type": "string",
+            "description": "Product description"
+        },
+        "instagram_url": {
+            "type": "string",
+            "description": "Instagram URL"
+        },
+        "is_new": {
+            "type": "boolean",
+            "description": "Is new arrival",
+            "default": false
+        },
+        "is_featured": {
+            "type": "boolean",
+            "description": "Is featured/hit",
+            "default": false
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "brand"
+    ]
+}
