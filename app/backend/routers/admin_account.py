@@ -97,6 +97,51 @@ class AccountResponse(BaseModel):
         from_attributes = True
 
 
+class UpdateRoleRequest(BaseModel):
+    """Schema for updating a user's role."""
+    user_id: str
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in ("user", "admin"):
+            raise ValueError("Роль должна быть 'user' или 'admin'")
+        return v
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("ID пользователя не может быть пустым")
+        return v
+
+
+class DeleteUserRequest(BaseModel):
+    """Schema for deleting a user."""
+    user_id: str
+
+    @field_validator("user_id")
+    @classmethod
+    def validate_user_id(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("ID пользователя не может быть пустым")
+        return v
+
+
+class UserListResponse(BaseModel):
+    """Single user info in the list."""
+    id: str
+    email: str
+    name: Optional[str] = None
+    role: str
+    last_login: Optional[str] = None
+    created_at: Optional[str] = None
+
+
 class FeedbackEmailRequest(BaseModel):
     """Schema for updating feedback email with validation."""
     email: str
@@ -247,3 +292,85 @@ async def update_feedback_email(
 
     logger.info(f"Feedback email updated to: {data.email}")
     return FeedbackEmailResponse(email=data.email)
+
+
+# ---------- User Management Endpoints ----------
+
+@router.get("/users", response_model=list[UserListResponse])
+async def list_users(
+    current_user: UserResponse = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """List all registered users. Admin only."""
+    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    users = result.scalars().all()
+    return [
+        UserListResponse(
+            id=u.id,
+            email=u.email,
+            name=u.name,
+            role=u.role,
+            last_login=u.last_login.isoformat() if u.last_login else None,
+            created_at=u.created_at.isoformat() if u.created_at else None,
+        )
+        for u in users
+    ]
+
+
+@router.put("/users/role", response_model=UserListResponse)
+async def update_user_role(
+    data: UpdateRoleRequest,
+    current_user: UserResponse = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update a user's role (promote/demote). Admin only."""
+    if data.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Вы не можете изменить свою собственную роль",
+        )
+
+    result = await db.execute(select(User).where(User.id == data.user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+
+    old_role = user.role
+    user.role = data.role
+    await db.commit()
+    await db.refresh(user)
+
+    logger.info(f"User {user.email} role changed: {old_role} -> {data.role} by admin {current_user.email}")
+    return UserListResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        role=user.role,
+        last_login=user.last_login.isoformat() if user.last_login else None,
+        created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+@router.delete("/users/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: UserResponse = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Delete a user account. Admin only."""
+    if user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Вы не можете удалить свой собственный аккаунт",
+        )
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+
+    await db.delete(user)
+    await db.commit()
+
+    logger.info(f"User {user.email} deleted by admin {current_user.email}")
+    return {"message": f"Пользователь {user.email} удалён", "deleted": True}

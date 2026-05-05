@@ -21,7 +21,17 @@ type Tab =
   | "brands"
   | "categories"
   | "account"
+  | "users"
   | "settings";
+
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  role: string;
+  last_login: string | null;
+  created_at: string | null;
+}
 
 /* ─── Image Upload Helper ─── */
 function ImageUpload({
@@ -201,6 +211,12 @@ export default function Admin() {
   const [feedbackEmail, setFeedbackEmail] = useState("");
   const [feedbackLoading, setFeedbackLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Users management state
+  const [usersList, setUsersList] = useState<AdminUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersMsg, setUsersMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Load account data on mount
   useEffect(() => {
@@ -382,6 +398,7 @@ export default function Admin() {
     { key: "brands", label: "Бренды" },
     { key: "categories", label: "Категории" },
     { key: "account", label: "Аккаунт" },
+    { key: "users", label: "Пользователи" },
     { key: "settings", label: "Настройки" },
   ];
 
@@ -1449,6 +1466,215 @@ export default function Admin() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* USERS TAB */}
+        {/* ═══════════════════════════════════════════ */}
+        {activeTab === "users" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase">
+                Управление пользователями
+              </h3>
+              <button
+                onClick={async () => {
+                  setUsersLoading(true);
+                  setUsersMsg(null);
+                  try {
+                    const res = await client.apiCall.invoke({
+                      url: "/api/v1/admin/account/users",
+                      method: "GET",
+                      data: {},
+                    });
+                    setUsersList(res.data || []);
+                  } catch (err: any) {
+                    const detail = err?.response?.data?.detail || err?.message || "Ошибка загрузки";
+                    setUsersMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка загрузки пользователей" });
+                  } finally {
+                    setUsersLoading(false);
+                  }
+                }}
+                disabled={usersLoading}
+                className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-4 py-2 hover:text-white/80 hover:border-white/40 transition-colors disabled:opacity-50"
+              >
+                {usersLoading ? "Загрузка..." : "Обновить"}
+              </button>
+            </div>
+
+            {usersMsg && (
+              <div className={`flex items-center gap-2 mb-4 text-xs ${usersMsg.type === "success" ? "text-green-400" : "text-red-400"}`}>
+                {usersMsg.type === "success" ? <Check size={14} /> : <AlertCircle size={14} />}
+                {usersMsg.text}
+              </div>
+            )}
+
+            {usersList.length === 0 && !usersLoading ? (
+              <div className="bg-[#1A1A1A] border border-white/10 p-8 text-center">
+                <p className="text-white/30 text-sm mb-4">Список пользователей пуст</p>
+                <button
+                  onClick={async () => {
+                    setUsersLoading(true);
+                    setUsersMsg(null);
+                    try {
+                      const res = await client.apiCall.invoke({
+                        url: "/api/v1/admin/account/users",
+                        method: "GET",
+                        data: {},
+                      });
+                      setUsersList(res.data || []);
+                    } catch (err: any) {
+                      const detail = err?.response?.data?.detail || err?.message || "Ошибка загрузки";
+                      setUsersMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка загрузки пользователей" });
+                    } finally {
+                      setUsersLoading(false);
+                    }
+                  }}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
+                >
+                  Загрузить пользователей
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
+                      <th className="text-left py-3 px-2">Имя</th>
+                      <th className="text-left py-3 px-2">Email</th>
+                      <th className="text-left py-3 px-2">Роль</th>
+                      <th className="text-left py-3 px-2">Последний вход</th>
+                      <th className="text-left py-3 px-2">Дата регистрации</th>
+                      <th className="text-right py-3 px-2">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersList.map((u) => (
+                      <tr
+                        key={u.id}
+                        className="border-b border-white/5 hover:bg-white/[0.02]"
+                      >
+                        <td className="py-3 px-2 text-white/80">
+                          {u.name || <span className="text-white/30">—</span>}
+                        </td>
+                        <td className="py-3 px-2 text-white/50">{u.email}</td>
+                        <td className="py-3 px-2">
+                          <span
+                            className={`text-[10px] px-2 py-0.5 ${
+                              u.role === "admin"
+                                ? "bg-[#C69B56]/20 text-[#C69B56]"
+                                : "bg-white/5 text-white/40"
+                            }`}
+                          >
+                            {u.role === "admin" ? "Админ" : "Пользователь"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-white/30 text-xs">
+                          {u.last_login
+                            ? new Date(u.last_login).toLocaleDateString("ru-RU", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })
+                            : "—"}
+                        </td>
+                        <td className="py-3 px-2 text-white/30 text-xs">
+                          {u.created_at
+                            ? new Date(u.created_at).toLocaleDateString("ru-RU", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                              })
+                            : "—"}
+                        </td>
+                        <td className="py-3 px-2 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={async () => {
+                                const newRole = u.role === "admin" ? "user" : "admin";
+                                try {
+                                  const res = await client.apiCall.invoke({
+                                    url: "/api/v1/admin/account/users/role",
+                                    method: "PUT",
+                                    data: { user_id: u.id, role: newRole },
+                                  });
+                                  setUsersList((prev) =>
+                                    prev.map((user) =>
+                                      user.id === u.id
+                                        ? { ...user, role: newRole }
+                                        : user
+                                    )
+                                  );
+                                  setUsersMsg({
+                                    type: "success",
+                                    text: `Роль ${u.email} изменена на ${newRole === "admin" ? "админ" : "пользователь"}`,
+                                  });
+                                } catch (err: any) {
+                                  const detail = err?.response?.data?.detail || err?.message || "Ошибка";
+                                  setUsersMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка изменения роли" });
+                                }
+                              }}
+                              className={`text-xs px-2 py-1 border transition-colors ${
+                                u.role === "admin"
+                                  ? "border-white/20 text-white/40 hover:text-white/70 hover:border-white/40"
+                                  : "border-[#C69B56]/30 text-[#C69B56]/60 hover:text-[#C69B56] hover:border-[#C69B56]/60"
+                              }`}
+                            >
+                              {u.role === "admin" ? "Понизить" : "Повысить"}
+                            </button>
+                            {deleteConfirmId === u.id ? (
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      await client.apiCall.invoke({
+                                        url: `/api/v1/admin/account/users/${u.id}`,
+                                        method: "DELETE",
+                                        data: {},
+                                      });
+                                      setUsersList((prev) =>
+                                        prev.filter((user) => user.id !== u.id)
+                                      );
+                                      setUsersMsg({
+                                        type: "success",
+                                        text: `Пользователь ${u.email} удалён`,
+                                      });
+                                    } catch (err: any) {
+                                      const detail = err?.response?.data?.detail || err?.message || "Ошибка";
+                                      setUsersMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка удаления" });
+                                    }
+                                    setDeleteConfirmId(null);
+                                  }}
+                                  className="text-xs px-2 py-1 bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30 transition-colors"
+                                >
+                                  Подтвердить
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="text-xs px-2 py-1 border border-white/20 text-white/40 hover:text-white/70 transition-colors"
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDeleteConfirmId(u.id)}
+                                className="text-white/40 hover:text-red-400 text-xs transition-colors"
+                              >
+                                Удалить
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
