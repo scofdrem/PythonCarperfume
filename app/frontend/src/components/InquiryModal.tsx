@@ -12,10 +12,13 @@ interface InquiryModalProps {
 
 const client = createClient();
 
+type ContactMethod = "email" | "telegram";
+
 export default function InquiryModal({ product, selectedVolume, isOpen, onClose }: InquiryModalProps) {
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [telegram, setTelegram] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [contactMethod, setContactMethod] = useState<ContactMethod>("email");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -23,17 +26,18 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customerName.trim()) {
-      setError("Пожалуйста, укажите ваше имя");
+    setError("");
+
+    if (contactMethod === "telegram" && !telegram.trim()) {
+      setError("Пожалуйста, укажите Telegram для связи");
       return;
     }
-    if (!customerPhone.trim() && !customerEmail.trim()) {
-      setError("Пожалуйста, укажите телефон или email для связи");
+    if (contactMethod === "email" && !customerEmail.trim()) {
+      setError("Пожалуйста, укажите Email для связи");
       return;
     }
 
     setSubmitting(true);
-    setError("");
 
     try {
       await client.apiCall.invoke({
@@ -44,8 +48,9 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
           product_brand: product.brand,
           volume: `${selectedVolume} мл`,
           customer_name: customerName.trim(),
-          customer_phone: customerPhone.trim(),
+          telegram: telegram.trim(),
           customer_email: customerEmail.trim(),
+          contact_method: contactMethod,
           message: message.trim(),
         },
       });
@@ -59,8 +64,9 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
 
   const handleClose = () => {
     setCustomerName("");
-    setCustomerPhone("");
+    setTelegram("");
     setCustomerEmail("");
+    setContactMethod("email");
     setMessage("");
     setSubmitted(false);
     setError("");
@@ -113,16 +119,10 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
         ) : (
           /* Form */
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
-            {/* Selected volume info */}
-            <div className="bg-white/5 border border-white/5 px-4 py-3">
-              <span className="text-white/40 text-xs">Объём:</span>
-              <span className="text-[#C69B56] text-sm ml-2">{selectedVolume} мл</span>
-            </div>
-
-            {/* Name */}
+            {/* Name (optional) */}
             <div>
               <label className="block text-white/60 text-xs mb-1.5">
-                Ваше имя <span className="text-[#C69B56]">*</span>
+                Ваше имя
               </label>
               <input
                 type="text"
@@ -133,31 +133,104 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
               />
             </div>
 
-            {/* Phone */}
+            {/* Contact method radio */}
             <div>
-              <label className="block text-white/60 text-xs mb-1.5">
-                Телефон
+              <label className="block text-white/60 text-xs mb-2">
+                Способ связи <span className="text-[#C69B56]">*</span>
               </label>
-              <input
-                type="tel"
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                placeholder="+375 (29) 123-45-67"
-                className="w-full bg-white/5 border border-white/10 text-white text-sm px-4 py-2.5 focus:border-[#C69B56]/50 focus:outline-none transition-colors placeholder:text-white/20"
-              />
+              <div className="flex gap-4">
+                <label
+                  className={`flex items-center gap-2 cursor-pointer px-4 py-2 border transition-colors ${
+                    contactMethod === "email"
+                      ? "border-[#C69B56] bg-[#C69B56]/10 text-[#C69B56]"
+                      : "border-white/10 text-white/40 hover:border-white/30"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="contactMethod"
+                    value="email"
+                    checked={contactMethod === "email"}
+                    onChange={() => setContactMethod("email")}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
+                      contactMethod === "email"
+                        ? "border-[#C69B56]"
+                        : "border-white/30"
+                    }`}
+                  >
+                    {contactMethod === "email" && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C69B56]" />
+                    )}
+                  </span>
+                  <span className="text-sm">Email</span>
+                </label>
+                <label
+                  className={`flex items-center gap-2 cursor-pointer px-4 py-2 border transition-colors ${
+                    contactMethod === "telegram"
+                      ? "border-[#C69B56] bg-[#C69B56]/10 text-[#C69B56]"
+                      : "border-white/10 text-white/40 hover:border-white/30"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="contactMethod"
+                    value="telegram"
+                    checked={contactMethod === "telegram"}
+                    onChange={() => setContactMethod("telegram")}
+                    className="sr-only"
+                  />
+                  <span
+                    className={`w-3 h-3 rounded-full border-2 flex items-center justify-center ${
+                      contactMethod === "telegram"
+                        ? "border-[#C69B56]"
+                        : "border-white/30"
+                    }`}
+                  >
+                    {contactMethod === "telegram" && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#C69B56]" />
+                    )}
+                  </span>
+                  <span className="text-sm">Telegram</span>
+                </label>
+              </div>
             </div>
 
-            {/* Email */}
+            {/* Email field */}
             <div>
               <label className="block text-white/60 text-xs mb-1.5">
-                Email
+                Email {contactMethod === "email" && <span className="text-[#C69B56]">*</span>}
               </label>
               <input
                 type="email"
                 value={customerEmail}
                 onChange={(e) => setCustomerEmail(e.target.value)}
                 placeholder="example@mail.com"
-                className="w-full bg-white/5 border border-white/10 text-white text-sm px-4 py-2.5 focus:border-[#C69B56]/50 focus:outline-none transition-colors placeholder:text-white/20"
+                className={`w-full bg-white/5 border text-white text-sm px-4 py-2.5 focus:outline-none transition-colors placeholder:text-white/20 ${
+                  contactMethod === "email"
+                    ? "border-[#C69B56]/40 focus:border-[#C69B56]/70"
+                    : "border-white/10 focus:border-[#C69B56]/50"
+                }`}
+              />
+            </div>
+
+            {/* Telegram field */}
+            <div>
+              <label className="block text-white/60 text-xs mb-1.5">
+                Telegram {contactMethod === "telegram" && <span className="text-[#C69B56]">*</span>}
+              </label>
+              <input
+                type="text"
+                value={telegram}
+                onChange={(e) => setTelegram(e.target.value)}
+                placeholder="@username или +375 (29) 123-45-67"
+                className={`w-full bg-white/5 border text-white text-sm px-4 py-2.5 focus:outline-none transition-colors placeholder:text-white/20 ${
+                  contactMethod === "telegram"
+                    ? "border-[#C69B56]/40 focus:border-[#C69B56]/70"
+                    : "border-white/10 focus:border-[#C69B56]/50"
+                }`}
               />
             </div>
 
@@ -191,7 +264,7 @@ export default function InquiryModal({ product, selectedVolume, isOpen, onClose 
             </button>
 
             <p className="text-white/30 text-[10px] text-center">
-              Укажите телефон или email, чтобы мы могли связаться с вами
+              Выберите способ связи и укажите соответствующие данные
             </p>
           </form>
         )}
