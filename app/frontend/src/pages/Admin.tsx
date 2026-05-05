@@ -450,7 +450,7 @@ export default function Admin() {
           gender: formGender,
           ageRange: formAgeRange,
           volumes,
-          priceRange: [0, 0] as [number, number],
+
           image:
             formImage ||
             "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",

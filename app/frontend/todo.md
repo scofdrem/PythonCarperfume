@@ -64,4 +64,5 @@
 - [x] Create backend inquiry router (routers/inquiry.py) — POST /api/v1/inquiry/submit
 - [x] Create InquiryModal.tsx — feedback inquiry modal with form
 - [x] Add "Уточнить наличие" button to ProductCard.tsx with modal integration
+- [x] Remove price/priceRange from product data, ProductCard, Catalogue sort, and Admin form
 - [x] Run lint and build, fix any issues

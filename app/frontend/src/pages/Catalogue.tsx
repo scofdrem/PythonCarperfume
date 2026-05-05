@@ -7,7 +7,7 @@ import ProductCard from "@/components/ProductCard";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-type SortOption = "popular" | "price-asc" | "price-desc" | "name";
+type SortOption = "popular" | "name";
 
 export default function Catalogue() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,12 +64,6 @@ export default function Catalogue() {
     }
 
     switch (sort) {
-      case "price-asc":
-        result.sort((a, b) => a.priceRange[0] - b.priceRange[0]);
-        break;
-      case "price-desc":
-        result.sort((a, b) => b.priceRange[0] - a.priceRange[0]);
-        break;
       case "name":
         result.sort((a, b) => a.name.localeCompare(b.name));
         break;
@@ -130,8 +124,6 @@ export default function Catalogue() {
                 className="bg-[#1A1A1A] border border-white/10 text-white/60 text-xs px-4 py-3 outline-none cursor-pointer"
               >
                 <option value="popular">По популярности</option>
-                <option value="price-asc">Цена ↑</option>
-                <option value="price-desc">Цена ↓</option>
                 <option value="name">По названию</option>
               </select>
             </div>
