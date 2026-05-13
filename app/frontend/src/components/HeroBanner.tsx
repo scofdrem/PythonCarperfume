@@ -1,8 +1,25 @@
 import { useSiteContent } from "@/data/siteContent";
+import { useState, useEffect } from "react";
+import { resolveImageUrl } from "@/utils/storage";
 
 export default function HeroBanner() {
   const content = useSiteContent();
-  const { hero } = content;
+  const { hero, about } = content;
+  const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+
+  // Resolve logo URL when site content changes
+  useEffect(() => {
+    const logo = about.logo || "/logo.jpg";
+    if (logo.startsWith("http://") || logo.startsWith("https://") || logo.startsWith("data:") || logo === "/logo.jpg") {
+      setLogoUrl(logo);
+    } else if (logo.startsWith("storage://")) {
+      resolveImageUrl(logo).then((url) => {
+        setLogoUrl(url || "/logo.jpg");
+      });
+    } else {
+      setLogoUrl(logo);
+    }
+  }, [about.logo]);
 
   return (
     <section className="relative h-[35vh] sm:h-[40vh] overflow-hidden">
@@ -23,7 +40,7 @@ export default function HeroBanner() {
           {/* Logo */}
           <div className="mb-6">
             <img
-              src="/logo.jpg"
+              src={logoUrl}
               alt="1000 Ароматов"
               className="h-20 sm:h-24 lg:h-28 w-auto object-contain rounded-lg"
             />

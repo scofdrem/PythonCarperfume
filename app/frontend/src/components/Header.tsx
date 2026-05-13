@@ -1,10 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu } from "lucide-react";
+import { useSiteContent } from "@/data/siteContent";
+import { resolveImageUrl } from "@/utils/storage";
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const siteContent = useSiteContent();
+  const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+
+  // Resolve logo URL when site content changes
+  useEffect(() => {
+    const logo = siteContent.about.logo || "/logo.jpg";
+    if (logo.startsWith("http://") || logo.startsWith("https://") || logo.startsWith("data:") || logo === "/logo.jpg") {
+      setLogoUrl(logo);
+    } else if (logo.startsWith("storage://")) {
+      resolveImageUrl(logo).then((url) => {
+        setLogoUrl(url || "/logo.jpg");
+      });
+    } else {
+      setLogoUrl(logo);
+    }
+  }, [siteContent.about.logo]);
 
   const navLinks = [
     { name: "Каталог", path: "/catalogue" },
@@ -27,7 +45,7 @@ export default function Header() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 shrink-0">
             <img
-              src="/logo.jpg"
+              src={logoUrl}
               alt="1000 АРОМАТОВ"
               className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
             />

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useDynamicBrands } from "@/data/brandsStore";
 import { useSiteContent } from "@/data/siteContent";
+import { resolveImageUrl } from "@/utils/storage";
 
 function TelegramIcon() {
   return (
@@ -28,8 +30,23 @@ function InstagramIcon() {
 
 export default function Footer() {
   const content = useSiteContent();
-  const { footer } = content;
+  const { footer, about } = content;
   const { brands } = useDynamicBrands();
+  const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+
+  // Resolve logo URL when site content changes
+  useEffect(() => {
+    const logo = about.logo || "/logo.jpg";
+    if (logo.startsWith("http://") || logo.startsWith("https://") || logo.startsWith("data:") || logo === "/logo.jpg") {
+      setLogoUrl(logo);
+    } else if (logo.startsWith("storage://")) {
+      resolveImageUrl(logo).then((url) => {
+        setLogoUrl(url || "/logo.jpg");
+      });
+    } else {
+      setLogoUrl(logo);
+    }
+  }, [about.logo]);
 
   return (
     <footer className="bg-[#0A0A0A] border-t border-white/5">
@@ -39,7 +56,7 @@ export default function Footer() {
           <div>
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
-                src="/logo.jpg"
+                src={logoUrl}
                 alt="1000 АРОМАТОВ"
                 className="h-10 w-10 rounded-full object-cover"
               />

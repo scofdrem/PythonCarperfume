@@ -33,6 +33,7 @@ export interface SiteContent {
     email: string;
     workingHours: string;
     mapUrl: string;
+    logo?: string;
   };
   footer: {
     brandDescription: string;
@@ -55,7 +56,7 @@ export const defaultSiteContent: SiteContent = {
     headingLine1: "Мир элитных",
     headingLine2: "ароматов",
     description:
-      "Откройте для себя коллекцию нишевых и люксовых парфюмов в формате отливантов. Попробуйте легендарные ароматы от 2 мл.",
+      "Откройте для себя коллекцию нишевых и люксовых парфюмов в формате отливантов. Попробуйте популярные ароматы от 2 мл.",
     buttonText: "Смотреть каталог",
     buttonLink: "/catalogue",
   },
@@ -99,6 +100,7 @@ export const defaultSiteContent: SiteContent = {
     workingHours: "Пн–Пт: 10:00–20:00, Сб: 11:00–18:00",
     mapUrl:
       "https://www.openstreetmap.org/export/embed.html?bbox=27.4%2C53.85%2C27.7%2C53.97&layer=mapnik",
+    logo: "/logo.jpg",
   },
   footer: {
     brandDescription:
@@ -145,6 +147,10 @@ function migrateContent(data: Record<string, any>): SiteContent {
   }
   if (!about.banners) {
     about.banners = defaultSiteContent.about.banners;
+  }
+  // Ensure logo field exists
+  if (!about.logo) {
+    about.logo = defaultSiteContent.about.logo;
   }
   data.about = about;
   // Ensure all top-level keys exist

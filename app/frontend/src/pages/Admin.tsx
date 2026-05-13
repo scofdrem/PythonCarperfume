@@ -1693,6 +1693,29 @@ export default function Admin() {
               )}
             </div>
 
+            {/* Logo Upload */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
+                Логотип
+              </h4>
+              <p className="text-white/30 text-[10px] mb-4">
+                Рекомендуется квадратное изображение. Логотип отображается в шапке сайта в круглом формате (40×40 px / 48×48 px).
+              </p>
+              <ImageUpload
+                label="Логотип сайта"
+                value={draft.about.logo || "/logo.jpg"}
+                onChange={(v) =>
+                  updateDraft((prev) => ({
+                    ...prev,
+                    about: { ...prev.about, logo: v },
+                  }))
+                }
+                folder="logos"
+                previewWidth={80}
+                previewHeight={80}
+              />
+            </div>
+
             {/* About Details */}
             <div className="bg-[#1A1A1A] border border-white/10 p-6">
               <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
