@@ -247,6 +247,7 @@ export default function Admin() {
   const [formImage, setFormImage] = useState("");
   const [formFeatured, setFormFeatured] = useState(false);
   const [formNew, setFormNew] = useState(false);
+  const [formDescription, setFormDescription] = useState("");
 
   // Dynamic brands derived from product list
   const uniqueBrands = [...new Set(productList.map((p) => p.brand))].sort();
@@ -484,6 +485,7 @@ export default function Admin() {
     setFormImage("");
     setFormFeatured(false);
     setFormNew(false);
+    setFormDescription("");
     setEditingProduct(null);
     setShowAddForm(false);
   };
@@ -497,6 +499,7 @@ export default function Admin() {
     setFormAgeRange(p.ageRange);
     setFormVolumes(p.volumes.join(", "));
     setFormImage(p.image);
+    setFormDescription(p.description || "");
     setFormFeatured(!!p.isFeatured);
     setFormNew(!!p.isNew);
     setShowAddForm(true);
@@ -527,7 +530,7 @@ export default function Admin() {
         ageRange: formAgeRange,
         volumes,
         image: imageValue,
-        description: editingProduct.description || "",
+        description: formDescription,
         instagramUrl: editingProduct.instagramUrl || "",
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
@@ -548,7 +551,7 @@ export default function Admin() {
         image:
           formImage ||
           "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
-        description: "",
+        description: formDescription,
         instagramUrl: "",
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
@@ -1049,6 +1052,16 @@ export default function Admin() {
                     value={formImage}
                     onChange={setFormImage}
                   />
+                  <div className="lg:col-span-2">
+                    <Field
+                      label="Описание Продукта"
+                      value={formDescription}
+                      onChange={setFormDescription}
+                      type="textarea"
+                      rows={4}
+                      placeholder="Введите описание продукта..."
+                    />
+                  </div>
                   <div className="flex items-center gap-6 pt-5">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input
