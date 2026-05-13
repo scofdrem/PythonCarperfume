@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
-import { createClient } from "@metagptx/web-sdk";
 import { type Product, type Category } from "@/data/products";
 import { rebuildBrandsFromProducts } from "@/data/brandsStore";
 import {
@@ -25,6 +24,7 @@ import {
 } from "@/data/productsStore";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { getAPIBaseURL } from "@/lib/config";
 
 type Tab =
   | "products"
@@ -45,6 +45,38 @@ interface AdminUser {
   role: string;
   last_login: string | null;
   created_at: string | null;
+}
+
+async function adminApiCall(method: string, endpoint: string, data?: any) {
+  // Get token from localStorage (set during auth callback)
+  const token = typeof window !== "undefined" && window.localStorage
+    ? localStorage.getItem("token")
+    : null;
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  // Add authorization header if token exists
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${getAPIBaseURL()}${endpoint}`, {
+    method,
+    credentials: "include",
+    headers,
+    body: data ? JSON.stringify(data) : undefined,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ detail: response.statusText }));
+    throw Object.assign(new Error(errorData.detail || response.statusText), {
+      response: { data: errorData, status: response.status },
+    });
+  }
+
+  return response.json();
 }
 
 /* ─── Image Upload Helper (with cloud storage) ─── */
@@ -407,12 +439,17 @@ export default function Admin() {
   const [saved, setSaved] = useState(false);
 
   // Account management state
-  const client = createClient();
   const [accountEmail, setAccountEmail] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountRole, setAccountRole] = useState("");
+  const [accountLogin, setAccountLogin] = useState("");
+  const [hasPassword, setHasPassword] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountMsg, setAccountMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Password visibility toggles
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
 
   // Password state
   const [currentPassword, setCurrentPassword] = useState("");
@@ -550,29 +587,23 @@ export default function Admin() {
 
   // Load account data on mount
   useEffect(() => {
-    const loadAccount = async () => {
-      try {
-        const res = await client.apiCall.invoke({
-          url: "/api/v1/admin/account",
-          method: "GET",
-          data: {},
-        });
-        if (res.data) {
-          setAccountEmail(res.data.email || "");
-          setAccountName(res.data.name || "");
-          setAccountRole(res.data.role || "");
-        }
-      } catch {
-        // silently fail - user may not be authenticated
-      }
-    };
+                const loadAccount = async () => {
+                  try {
+                    const res = await adminApiCall("GET", "/api/v1/admin/account");
+                    if (res.data) {
+                      setAccountEmail(res.data.email || "");
+                      setAccountName(res.data.name || "");
+                      setAccountRole(res.data.role || "");
+                      setAccountLogin(res.data.login || res.data.email || "");
+                      setHasPassword(Boolean(res.data.has_password));
+                    }
+                  } catch {
+                    // silently fail - user may not be authenticated
+                  }
+                };
     const loadFeedbackEmail = async () => {
       try {
-        const res = await client.apiCall.invoke({
-          url: "/api/v1/admin/account/feedback-email",
-          method: "GET",
-          data: {},
-        });
+        const res = await adminApiCall("GET", "/api/v1/admin/account/feedback-email");
         if (res.data) {
           setFeedbackEmail(res.data.email || "");
         }
@@ -586,11 +617,7 @@ export default function Admin() {
     // Load SMTP/Mail settings from database (persists across redeployments)
     const loadMailSettings = async () => {
       try {
-        const res = await client.apiCall.invoke({
-          url: "/api/v1/admin/smtp",
-          method: "GET",
-          data: {},
-        });
+        const res = await adminApiCall("GET", "/api/v1/admin/smtp");
         if (res.data) {
           setSmtpHost(res.data.smtp_host || "");
           setSmtpPort(res.data.smtp_port || "");
@@ -2331,6 +2358,33 @@ export default function Admin() {
               </h4>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
+                  <label className="block text-white/40 text-xs mb-1">Логин</label>
+                  <input
+                    type="text"
+                    value={accountLogin}
+                    onChange={(e) => {
+                      setAccountLogin(e.target.value);
+                      setAccountMsg(null);
+                    }}
+                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                    placeholder="admin"
+                  />
+                  <span className="text-white/20 text-[10px]">Логин для входа в систему (только латинские буквы, цифры, дефис и подчёркивание)</span>
+                </div>
+                <div>
+                  <label className="block text-white/40 text-xs mb-1">Статус пароля</label>
+                  <input
+                    type="text"
+                    value={hasPassword ? "Установлено" : "Не установлено"}
+                    disabled
+                    className={`w-full border text-sm px-3 py-2 cursor-not-allowed ${
+                      hasPassword
+                        ? "bg-green-900/20 border-green-500/30 text-green-400"
+                        : "bg-red-900/20 border-red-500/30 text-red-400"
+                    }`}
+                  />
+                </div>
+                <div>
                   <label className="block text-white/40 text-xs mb-1">Email</label>
                   <input
                     type="email"
@@ -2375,31 +2429,41 @@ export default function Admin() {
               )}
 
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={async () => {
-                    setAccountLoading(true);
-                    setAccountMsg(null);
-                    try {
-                      // Validate email format
-                      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-                      if (!emailRegex.test(accountEmail.trim())) {
-                        setAccountMsg({ type: "error", text: "Введите корректный email адрес" });
-                        setAccountLoading(false);
-                        return;
-                      }
-                      await client.apiCall.invoke({
-                        url: "/api/v1/admin/account/email",
-                        method: "PUT",
-                        data: { email: accountEmail.trim().toLowerCase() },
-                      });
-                      if (accountName.trim()) {
-                        await client.apiCall.invoke({
-                          url: "/api/v1/admin/account/name",
-                          method: "PUT",
-                          data: { name: accountName.trim() },
-                        });
-                      }
-                      setAccountMsg({ type: "success", text: "Данные аккаунта обновлены" });
+                  <button
+                    onClick={async () => {
+                      setAccountLoading(true);
+                      setAccountMsg(null);
+                      try {
+                        // Validate login format
+                        const loginRegex = /^[a-zA-Z0-9_\-]+$/;
+                        if (!loginRegex.test(accountLogin.trim())) {
+                          setAccountMsg({ type: "error", text: "Логин может содержать только латинские буквы, цифры, дефис и подчёркивание" });
+                          setAccountLoading(false);
+                          return;
+                        }
+                        if (accountLogin.trim().length < 3) {
+                          setAccountMsg({ type: "error", text: "Логин должен содержать минимум 3 символа" });
+                          setAccountLoading(false);
+                          return;
+                        }
+                        // Validate email format
+                        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+                        if (!emailRegex.test(accountEmail.trim())) {
+                          setAccountMsg({ type: "error", text: "Введите корректный email адрес" });
+                          setAccountLoading(false);
+                          return;
+                        }
+                        // Update login if changed
+                        if (accountLogin.trim()) {
+                          await adminApiCall("PUT", "/api/v1/admin/account/login", { login: accountLogin.trim() });
+                        }
+                        // Update email
+                        await adminApiCall("PUT", "/api/v1/admin/account/email", { email: accountEmail.trim().toLowerCase() });
+                        // Update name
+                        if (accountName.trim()) {
+                          await adminApiCall("PUT", "/api/v1/admin/account/name", { name: accountName.trim() });
+                        }
+                        setAccountMsg({ type: "success", text: "Данные аккаунта обновлены" });
                     } catch (err: any) {
                       const detail = err?.response?.data?.detail || err?.message || "Ошибка обновления";
                       setAccountMsg({ type: "error", text: typeof detail === "string" ? detail : "Ошибка обновления аккаунта" });
@@ -2421,37 +2485,68 @@ export default function Admin() {
               <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
                 Смена пароля
               </h4>
-              <div className="bg-[#C69B56]/5 border border-[#C69B56]/20 p-3 mb-4">
-                <p className="text-[#C69B56]/80 text-xs">
-                  Аутентификация управляется через внешний провайдер (OIDC). Для смены пароля используйте интерфейс провайдера авторизации.
-                </p>
-              </div>
               <div className="grid sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-white/40 text-xs mb-1">Текущий пароль</label>
-                  <input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => {
-                      setCurrentPassword(e.target.value);
-                      setPasswordMsg(null);
-                    }}
-                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
-                    placeholder="••••••••"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={currentPassword}
+                      onChange={(e) => {
+                        setCurrentPassword(e.target.value);
+                        setPasswordMsg(null);
+                      }}
+                      className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 pr-10 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      {showCurrentPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/40 text-xs mb-1">Новый пароль</label>
-                  <input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value);
-                      setPasswordMsg(null);
-                    }}
-                    className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none placeholder:text-white/20"
-                    placeholder="Минимум 8 символов"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => {
+                        setNewPassword(e.target.value);
+                        setPasswordMsg(null);
+                      }}
+                      className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 pr-10 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+                      placeholder="Минимум 8 символов"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
+                    >
+                      {showNewPassword ? (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-white/40 text-xs mb-1">Подтвердите пароль</label>
@@ -2498,8 +2593,8 @@ export default function Admin() {
                 <button
                   onClick={async () => {
                     setPasswordMsg(null);
-                    // Client-side validation
-                    if (!currentPassword) {
+                    // Client-side validation — only require current password when one is already set
+                    if (hasPassword && !currentPassword) {
                       setPasswordMsg({ type: "error", text: "Введите текущий пароль" });
                       return;
                     }
@@ -2520,16 +2615,12 @@ export default function Admin() {
                       return;
                     }
                     try {
-                      const res = await client.apiCall.invoke({
-                        url: "/api/v1/admin/account/password",
-                        method: "PUT",
-                        data: {
-                          current_password: currentPassword,
-                          new_password: newPassword,
-                          confirm_password: confirmPassword,
-                        },
+                      const res = await adminApiCall("PUT", "/api/v1/admin/account/password", {
+                        current_password: currentPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword,
                       });
-                      setPasswordMsg({ type: "success", text: res.data?.message || "Запрос на смену пароля обработан" });
+                      setPasswordMsg({ type: "success", text: res.data?.message || "Пароль успешно обновлён" });
                       setCurrentPassword("");
                       setNewPassword("");
                       setConfirmPassword("");
@@ -2562,11 +2653,7 @@ export default function Admin() {
                   setUsersLoading(true);
                   setUsersMsg(null);
                   try {
-                    const res = await client.apiCall.invoke({
-                      url: "/api/v1/admin/account/users",
-                      method: "GET",
-                      data: {},
-                    });
+                    const res = await adminApiCall("GET", "/api/v1/admin/account/users");
                     setUsersList(res.data || []);
                   } catch (err: any) {
                     const detail = err?.response?.data?.detail || err?.message || "Ошибка загрузки";
@@ -2597,11 +2684,7 @@ export default function Admin() {
                     setUsersLoading(true);
                     setUsersMsg(null);
                     try {
-                      const res = await client.apiCall.invoke({
-                        url: "/api/v1/admin/account/users",
-                        method: "GET",
-                        data: {},
-                      });
+                      const res = await adminApiCall("GET", "/api/v1/admin/account/users");
                       setUsersList(res.data || []);
                     } catch (err: any) {
                       const detail = err?.response?.data?.detail || err?.message || "Ошибка загрузки";
@@ -2675,10 +2758,9 @@ export default function Admin() {
                               onClick={async () => {
                                 const newRole = u.role === "admin" ? "user" : "admin";
                                 try {
-                                  const res = await client.apiCall.invoke({
-                                    url: "/api/v1/admin/account/users/role",
-                                    method: "PUT",
-                                    data: { user_id: u.id, role: newRole },
+                                  await adminApiCall("PUT", "/api/v1/admin/account/users/role", {
+                                    user_id: u.id,
+                                    role: newRole,
                                   });
                                   setUsersList((prev) =>
                                     prev.map((user) =>
@@ -2709,11 +2791,7 @@ export default function Admin() {
                                 <button
                                   onClick={async () => {
                                     try {
-                                      await client.apiCall.invoke({
-                                        url: `/api/v1/admin/account/users/${u.id}`,
-                                        method: "DELETE",
-                                        data: {},
-                                      });
+                                      await adminApiCall("DELETE", `/api/v1/admin/account/users/${u.id}`);
                                       setUsersList((prev) =>
                                         prev.filter((user) => user.id !== u.id)
                                       );
@@ -2807,11 +2885,7 @@ export default function Admin() {
                       return;
                     }
                     try {
-                      await client.apiCall.invoke({
-                        url: "/api/v1/admin/account/feedback-email",
-                        method: "PUT",
-                        data: { email: feedbackEmail.trim().toLowerCase() },
-                      });
+                      await adminApiCall("PUT", "/api/v1/admin/account/feedback-email", { email: feedbackEmail.trim().toLowerCase() });
                       setFeedbackMsg({ type: "success", text: "Email обратной связи обновлён" });
                     } catch (err: any) {
                       const detail = err?.response?.data?.detail || err?.message || "Ошибка сохранения";
@@ -2937,17 +3011,13 @@ export default function Admin() {
                     setMailLoading(true);
                     setMailMsg(null);
                     try {
-                      await client.apiCall.invoke({
-                        url: "/api/v1/admin/smtp",
-                        method: "PUT",
-                        data: {
-                          smtp_host: smtpHost.trim(),
-                          smtp_port: smtpPort.trim(),
-                          smtp_user: smtpUser.trim(),
-                          smtp_password: smtpPassword,
-                          email_from: emailFrom.trim(),
-                          email_to: emailTo.trim(),
-                        },
+                      await adminApiCall("PUT", "/api/v1/admin/smtp", {
+                        smtp_host: smtpHost.trim(),
+                        smtp_port: smtpPort.trim(),
+                        smtp_user: smtpUser.trim(),
+                        smtp_password: smtpPassword,
+                        email_from: emailFrom.trim(),
+                        email_to: emailTo.trim(),
                       });
                       setMailMsg({ type: "success", text: "Настройки почты сохранены и применены немедленно." });
                     } catch (err: any) {

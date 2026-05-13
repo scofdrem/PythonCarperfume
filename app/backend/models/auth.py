@@ -8,8 +8,10 @@ class User(Base):
 
     id = Column(String(255), primary_key=True, index=True)  # Use platform sub as primary key
     email = Column(String(255), nullable=False)
+    login = Column(String(255), nullable=True)  # Admin login username
     name = Column(String(255), nullable=True)
     role = Column(String(50), default="user", nullable=False)  # user/admin
+    password_hash = Column(String(255), nullable=True)  # Hashed password for local auth
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True), nullable=True)
 
