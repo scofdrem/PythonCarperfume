@@ -11,6 +11,7 @@ import {
   type SiteContent,
   type Banner,
 } from "@/data/siteContent";
+import { buildMapUrl } from "@/utils/mapUrl";
 import {
   useProductStore,
   addProduct,
@@ -1787,6 +1788,21 @@ export default function Admin() {
                     }
                     placeholder="https://www.openstreetmap.org/..."
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const url = buildMapUrl(draft.about.location);
+                      if (url) {
+                        updateDraft((prev) => ({
+                          ...prev,
+                          about: { ...prev.about, mapUrl: url },
+                        }));
+                      }
+                    }}
+                    className="mt-2 text-xs text-[#C69B56] hover:text-[#d4aa65] transition-colors tracking-[0.1em] uppercase"
+                  >
+                    🔄 Сгенерировать из локации
+                  </button>
                 </div>
               </div>
 

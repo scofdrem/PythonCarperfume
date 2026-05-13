@@ -5,6 +5,7 @@ import {
   newProducts,
 } from "@/data/products";
 import { useSiteContent } from "@/data/siteContent";
+import { buildMapUrl } from "@/utils/mapUrl";
 import { StorageImage } from "./StorageImage";
 import ProductCard from "./ProductCard";
 
@@ -187,7 +188,7 @@ export function About() {
           <div className="bg-[#1A1A1A] border border-white/5 overflow-hidden">
             <iframe
               title="Наше расположение"
-              src={about.mapUrl}
+              src={about.mapUrl || buildMapUrl(about.location)}
               className="w-full h-full min-h-[350px] border-0"
               loading="lazy"
             />
