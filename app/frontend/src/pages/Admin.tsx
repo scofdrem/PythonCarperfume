@@ -190,6 +190,133 @@ function ImageUpload({
   );
 }
 
+/* ─── PDF Upload Helper ─── */
+function PdfUpload({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (url: string) => void;
+  label: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState<string>("");
+
+  const handleFile = async (file: File) => {
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Пожалуйста, выберите PDF файл");
+      return;
+    }
+    setFileName(file.name);
+    setUploading(true);
+    try {
+      const { uploadPdf } = await import("@/utils/storage");
+      const result = await uploadPdf(file, "documents");
+      onChange(result.url);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      // Fallback to base64 if upload fails
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) onChange(e.target.result as string);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFile(file);
+  };
+
+  const removePdf = () => {
+    onChange("");
+    setFileName("");
+  };
+
+  return (
+    <div>
+      <label className="block text-white/40 text-xs mb-1">{label}</label>
+      <div
+        onClick={() => !uploading && inputRef.current?.click()}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        className={`relative border border-dashed cursor-pointer transition-colors h-20 flex items-center justify-center ${
+          uploading
+            ? "border-[#C69B56]/50 bg-[#C69B56]/5"
+            : dragOver
+            ? "border-[#C69B56] bg-[#C69B56]/5"
+            : value
+            ? "border-green-500/50 bg-green-500/5"
+            : "border-white/20 hover:border-white/40"
+        }`}
+      >
+        {uploading ? (
+          <div className="flex flex-col items-center gap-2 text-[#C69B56]">
+            <div className="w-5 h-5 border-2 border-[#C69B56]/30 border-t-[#C69B56] rounded-full animate-spin" />
+            <span className="text-[10px]">Загрузка...</span>
+          </div>
+        ) : value ? (
+          <div className="flex items-center gap-2 text-white/70">
+            <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="text-xs">PDF загружен</span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removePdf();
+              }}
+              className="ml-2 w-5 h-5 bg-black/70 flex items-center justify-center text-white/70 hover:text-white"
+            >
+              <X size={10} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-1 text-white/30">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            </svg>
+            <span className="text-[10px]">Нажмите или перетащите PDF</span>
+          </div>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          // Reset input so same file can be re-selected
+          e.target.value = "";
+        }}
+      />
+      {/* Fallback URL input */}
+      <div className="mt-1">
+        <input
+          value={value && !value.startsWith("data:") && !value.startsWith("storage://") ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Или вставьте URL к PDF"
+          className="w-full bg-black border border-white/10 text-white text-xs px-3 py-1.5 focus:border-[#C69B56] outline-none placeholder:text-white/20"
+        />
+      </div>
+    </div>
+  );
+}
+
 /* ─── Field Helper ─── */
 function Field({
   label,
@@ -1956,6 +2083,26 @@ export default function Admin() {
                     updateDraft((prev) => ({
                       ...prev,
                       footer: { ...prev.footer, offerText: v },
+                    }))
+                  }
+                />
+                <PdfUpload
+                  label="PDF — Политика конфиденциальности"
+                  value={draft.footer.privacyPolicyPdf}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, privacyPolicyPdf: v },
+                    }))
+                  }
+                />
+                <PdfUpload
+                  label="PDF — Оферта"
+                  value={draft.footer.offerPdf}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      footer: { ...prev.footer, offerPdf: v },
                     }))
                   }
                 />

@@ -33,6 +33,8 @@ export default function Footer() {
   const { footer, about } = content;
   const { brands } = useDynamicBrands();
   const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+  const [privacyPdfUrl, setPrivacyPdfUrl] = useState<string>("");
+  const [offerPdfUrl, setOfferPdfUrl] = useState<string>("");
 
   // Resolve logo URL when site content changes
   useEffect(() => {
@@ -47,6 +49,24 @@ export default function Footer() {
       setLogoUrl(logo);
     }
   }, [about.logo]);
+
+  // Resolve PDF URLs when site content changes
+  useEffect(() => {
+    if (footer.privacyPolicyPdf) {
+      resolveImageUrl(footer.privacyPolicyPdf).then((url) => {
+        setPrivacyPdfUrl(url);
+      });
+    } else {
+      setPrivacyPdfUrl("");
+    }
+    if (footer.offerPdf) {
+      resolveImageUrl(footer.offerPdf).then((url) => {
+        setOfferPdfUrl(url);
+      });
+    } else {
+      setOfferPdfUrl("");
+    }
+  }, [footer.privacyPolicyPdf, footer.offerPdf]);
 
   return (
     <footer className="bg-[#0A0A0A] border-t border-white/5">
@@ -197,12 +217,24 @@ export default function Footer() {
             {footer.copyright}
           </p>
           <div className="flex gap-6">
-            <a href="#" className="text-white/20 text-[11px] hover:text-white/40 transition-colors">
-              {footer.privacyPolicyText}
-            </a>
-            <a href="#" className="text-white/20 text-[11px] hover:text-white/40 transition-colors">
-              {footer.offerText}
-            </a>
+            {privacyPdfUrl ? (
+              <a href={privacyPdfUrl} target="_blank" rel="noopener noreferrer" className="text-white/20 text-[11px] hover:text-white/40 transition-colors">
+                {footer.privacyPolicyText}
+              </a>
+            ) : (
+              <span className="text-white/20 text-[11px]">
+                {footer.privacyPolicyText}
+              </span>
+            )}
+            {offerPdfUrl ? (
+              <a href={offerPdfUrl} target="_blank" rel="noopener noreferrer" className="text-white/20 text-[11px] hover:text-white/40 transition-colors">
+                {footer.offerText}
+              </a>
+            ) : (
+              <span className="text-white/20 text-[11px]">
+                {footer.offerText}
+              </span>
+            )}
           </div>
         </div>
       </div>

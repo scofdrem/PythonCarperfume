@@ -45,6 +45,8 @@ export interface SiteContent {
     copyright: string;
     privacyPolicyText: string;
     offerText: string;
+    privacyPolicyPdf: string;
+    offerPdf: string;
   };
 }
 
@@ -113,6 +115,8 @@ export const defaultSiteContent: SiteContent = {
     copyright: "© 2026 1000 АРОМАТОВ. Все права защищены.",
     privacyPolicyText: "Политика конфиденциальности",
     offerText: "Оферта",
+    privacyPolicyPdf: "",
+    offerPdf: "",
   },
 };
 
