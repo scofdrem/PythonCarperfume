@@ -5,7 +5,7 @@ export default function HeroBanner() {
   const { hero } = content;
 
   return (
-    <section className="relative h-[70vh] sm:h-[80vh] overflow-hidden">
+    <section className="relative h-[35vh] sm:h-[40vh] overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0">
         <img

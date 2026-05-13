@@ -262,20 +262,23 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
       const value = JSON.stringify((content as Record<string, any>)[field]);
       const existing = existingByKey.get(key);
 
-      if (existing) {
-        await client.entities.site_content.update({
-          id: String(existing.id),
-          data: { content_value: value },
-        });
-      } else {
+      try {
+        if (existing) {
+          // Remove existing entry first to avoid update issues
+          await client.entities.site_content.delete({ id: String(existing.id) });
+        }
+        // Create new entry with updated content
         await client.entities.site_content.create({
           data: { content_key: key, content_value: value },
         });
+      } catch (sectionErr: any) {
+        console.error(`saveSiteContent: failed to persist section "${key}":`, sectionErr?.message || sectionErr);
+        throw sectionErr; // Re-throw to fail the entire operation
       }
     }
     return true;
-  } catch (e) {
-    console.error("Failed to save site content:", e);
+  } catch (e: any) {
+    console.error("saveSiteContent: overall failure:", e?.message || e);
     return false;
   }
 }

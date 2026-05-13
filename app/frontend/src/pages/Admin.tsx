@@ -52,11 +52,15 @@ function ImageUpload({
   onChange,
   label,
   folder = "banners",
+  previewWidth,
+  previewHeight,
 }: {
   value: string;
   onChange: (url: string) => void;
   label: string;
   folder?: string;
+  previewWidth?: number;
+  previewHeight?: number;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -127,7 +131,8 @@ function ImageUpload({
             : dragOver
             ? "border-[#C69B56] bg-[#C69B56]/5"
             : "border-white/20 hover:border-white/40"
-        } ${previewUrl ? "h-40" : "h-24 flex items-center justify-center"}`}
+        } ${!previewUrl ? "h-24 flex items-center justify-center" : ""}`}
+        style={previewUrl && previewWidth && previewHeight ? { width: `${previewWidth}px`, height: `${previewHeight}px` } : previewUrl ? { height: "10rem" } : undefined}
       >
         {uploading ? (
           <div className="flex flex-col items-center gap-2 text-[#C69B56]">
@@ -257,8 +262,20 @@ export default function Admin() {
     rebuildBrandsFromProducts(productList);
   }, [productList]);
 
-  // Site content draft state
-  const [draft, setDraft] = useState<SiteContent>({ ...siteContent });
+  // Site content draft state — use deep clone to avoid shared references with store
+  const [draft, setDraft] = useState<SiteContent>(() => JSON.parse(JSON.stringify(siteContent)));
+
+  // Re-sync draft when siteContent changes externally (e.g., after backend reload)
+  useEffect(() => {
+    setDraft(prev => {
+      // Only update if the reference changed (avoid overwriting user's in-flight edits)
+      const stringified = JSON.stringify(siteContent);
+      if (JSON.stringify(prev) !== stringified) {
+        return JSON.parse(stringified);
+      }
+      return prev;
+    });
+  }, [siteContent]);
   const [saved, setSaved] = useState(false);
 
   // Account management state
@@ -472,16 +489,19 @@ export default function Admin() {
     setSaving(true);
     const ok = await persistSiteContent(draft);
     setSaving(false);
-    setSaved(ok);
-    if (!ok) {
+    if (ok) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      setSaved(false);
       // Still update local state even if backend save fails
       setSiteContent(draft);
+      showToast("Не удалось сохранить изменения на сервере. Проверьте соединение и попробуйте снова.");
     }
-    setTimeout(() => setSaved(false), 2000);
   };
 
   const resetDraft = () => {
-    setDraft({ ...siteContent });
+    setDraft(JSON.parse(JSON.stringify(siteContent)));
     setSaved(false);
   };
 
@@ -1635,6 +1655,8 @@ export default function Admin() {
                           label="Изображение баннера"
                           value={banner.image}
                           onChange={(v) => updateBanner(i, "image", v)}
+                          previewWidth={200}
+                          previewHeight={160}
                         />
                       </div>
                     </div>
@@ -1644,7 +1666,7 @@ export default function Admin() {
                         <p className="text-white/20 text-[10px] uppercase tracking-wider px-3 py-1 bg-black/50">
                           Предпросмотр
                         </p>
-                        <div className="relative aspect-[4/3] overflow-hidden">
+                        <div className="relative w-[200px] h-[160px] overflow-hidden">
                           <img
                             src={banner.image}
                             alt={banner.title}

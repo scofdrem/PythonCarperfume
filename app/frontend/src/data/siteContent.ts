@@ -127,7 +127,7 @@ export function getSiteContent(): SiteContent {
 }
 
 export function setSiteContent(content: SiteContent) {
-  currentContent = { ...content };
+  currentContent = JSON.parse(JSON.stringify(content));
   listeners.forEach((fn) => fn());
 }
 
@@ -177,9 +177,9 @@ export async function persistSiteContent(content: SiteContent): Promise<boolean>
 }
 
 export function useSiteContent(): SiteContent {
-  const [content, setContent] = useState<SiteContent>(currentContent);
+  const [content, setContent] = useState<SiteContent>(() => JSON.parse(JSON.stringify(currentContent)));
   useEffect(() => {
-    const handler = () => setContent({ ...currentContent });
+    const handler = () => setContent(JSON.parse(JSON.stringify(currentContent)));
     listeners.add(handler);
     return () => {
       listeners.delete(handler);
