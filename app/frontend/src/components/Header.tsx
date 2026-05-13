@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Search, X, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export default function Header() {
-  const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -59,31 +58,7 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Search */}
-          <div className="flex items-center gap-3">
-            {searchOpen ? (
-              <div className="flex items-center gap-2 bg-white/10 rounded-full px-4 py-2">
-                <Search size={16} className="text-[#C69B56]" />
-                <input
-                  type="text"
-                  placeholder="Поиск ароматов..."
-                  className="bg-transparent text-white text-sm outline-none w-32 sm:w-48 placeholder:text-white/40"
-                  autoFocus
-                />
-                <button onClick={() => setSearchOpen(false)}>
-                  <X size={16} className="text-white/50 hover:text-white" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setSearchOpen(true)}
-                className="text-white/70 hover:text-[#C69B56] transition-colors p-1"
-              >
-                <Search size={20} />
-              </button>
-            )}
 
-          </div>
         </div>
       </div>
 
