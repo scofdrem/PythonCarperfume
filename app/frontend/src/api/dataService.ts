@@ -75,13 +75,15 @@ export async function updateProduct(
 ): Promise<Product | null> {
   try {
     const data = mapProductToBackend(updates);
+    console.log(`[updateProduct] PUT /api/v1/entities/products/${id}`, JSON.stringify(data));
     const response = await client.entities.products.update({
       id: String(id),
       data,
     });
+    console.log(`[updateProduct] Response:`, JSON.stringify(response.data));
     return response.data ? mapProductFromBackend(response.data) : null;
-  } catch (e) {
-    console.error("Failed to update product:", e);
+  } catch (e: any) {
+    console.error(`[updateProduct] Failed for product ${id}:`, e?.message, e?.response?.status, JSON.stringify(e?.response?.data));
     return null;
   }
 }

@@ -7,6 +7,26 @@ from pydantic_settings import BaseSettings
 logger = logging.getLogger(__name__)
 
 
+def _get_env_file_path() -> str:
+    """Find .env file path based on project structure."""
+    # backend/core/config.py -> backend -> app/ (project root)
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(current_dir))
+
+    # Check for .env in project root first
+    env_path = os.path.join(project_root, ".env")
+    if os.path.exists(env_path):
+        return env_path
+
+    # Check for .env in current directory
+    local_env = os.path.join(current_dir, ".env")
+    if os.path.exists(local_env):
+        return local_env
+
+    # Return relative .env as fallback
+    return ".env"
+
+
 class Settings(BaseSettings):
     # Application
     app_name: str = "FastAPI Modular Template"
@@ -17,6 +37,9 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
+    # Database
+    database_url: str = "sqlite+aiosqlite:///./app.db"
+
     # AWS Lambda Configuration
     is_lambda: bool = False
     lambda_function_name: str = "fastapi-backend"
@@ -26,45 +49,29 @@ class Settings(BaseSettings):
     def backend_url(self) -> str:
         """Generate backend URL from host and port."""
         if self.is_lambda:
-            # In Lambda environment, return the API Gateway URL
             return os.environ.get(
                 "PYTHON_BACKEND_URL", f"https://{self.lambda_function_name}.execute-api.{self.aws_region}.amazonaws.com"
             )
         else:
-            # Use localhost for external callbacks instead of 0.0.0.0
             display_host = "127.0.0.1" if self.host == "0.0.0.0" else self.host
             return os.environ.get("PYTHON_BACKEND_URL", f"http://{display_host}:{self.port}")
 
     class Config:
         case_sensitive = False
         extra = "ignore"
+        env_file = _get_env_file_path()
+        env_file_encoding = "utf-8"
 
     def __getattr__(self, name: str) -> Any:
         """
         Dynamically read attributes from environment variables.
-        For example: settings.opapi_key reads from OPAPI_KEY environment variable.
-
-        Args:
-            name: Attribute name (e.g., 'opapi_key')
-
-        Returns:
-            Value from environment variable
-
-        Raises:
-            AttributeError: If attribute doesn't exist and not found in environment variables
         """
-        # Convert attribute name to environment variable name (snake_case -> UPPER_CASE)
         env_var_name = name.upper()
-
-        # Check if environment variable exists
         if env_var_name in os.environ:
             value = os.environ[env_var_name]
-            # Cache the value in instance dict to avoid repeated lookups
             self.__dict__[name] = value
             logger.debug(f"Read dynamic attribute {name} from environment variable {env_var_name}")
             return value
-
-        # If not found, raise AttributeError to maintain normal Python behavior
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
 

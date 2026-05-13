@@ -15,6 +15,27 @@ Write-Info "========================================="
 Write-Info "  1000Aromas - Staging Environment"
 Write-Info "========================================="
 
+# Load environment variables from .env.staging
+$envFile = Join-Path $PSScriptRoot ".env.staging"
+if (Test-Path $envFile) {
+    Write-Info "Loading environment from .env.staging..."
+    Get-Content $envFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -and -not $line.StartsWith("#")) {
+            $parts = $line -split '=', 2
+            if ($parts.Count -eq 2) {
+                $key = $parts[0].Trim()
+                $value = $parts[1].Trim()
+                Set-Item -Path "env:$key" -Value $value
+                Write-Info "  Set $key"
+            }
+        }
+    }
+} else {
+    Write-Error "Could not find .env.staging at $envFile"
+    exit 1
+}
+
 # Check if ports are available
 function Test-Port($port) {
     $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
@@ -31,14 +52,16 @@ if (-not (Test-Port $FRONTEND_PORT)) {
     exit 1
 }
 
-# Start Backend
-Write-Info "Starting Backend service on port $BACKEND_PORT..."
+# Set additional environment variables
 $env:BACKEND_PORT = $BACKEND_PORT
 $env:FRONTEND_PORT = $FRONTEND_PORT
 $env:PYTHON_BACKEND_URL = $PYTHON_BACKEND_URL
 $env:ENVIRONMENT = "staging"
 $env:IS_LAMBDA = "false"
 $env:DEBUG = "true"
+
+Write-Info "Starting Backend service on port $BACKEND_PORT..."
+Write-Info "Database URL: $($env:DATABASE_URL)"
 
 # Start backend in a new window
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\backend'; python -m uvicorn main:app --host 0.0.0.0 --port $BACKEND_PORT --reload"
@@ -50,8 +73,6 @@ Start-Sleep -Seconds 5
 
 # Start Frontend
 Write-Info "Starting Frontend service on port $FRONTEND_PORT..."
-$env:VITE_PORT = $FRONTEND_PORT
-$env:PYTHON_BACKEND_URL = $PYTHON_BACKEND_URL
 
 # Start frontend in a new window
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend'; npm run dev"

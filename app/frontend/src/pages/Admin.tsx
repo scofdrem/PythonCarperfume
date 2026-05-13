@@ -502,27 +502,43 @@ export default function Admin() {
     setShowAddForm(true);
   };
 
+  const [saveError, setSaveError] = useState<string | null>(null);
+
   const handleSave = async () => {
-    if (!formName.trim() || !formBrand.trim()) return;
+    if (!formName.trim() || !formBrand.trim()) {
+      setSaveError("Название и бренд обязательны");
+      return;
+    }
+    setSaveError(null);
     const volumes = formVolumes
       .split(",")
       .map((v) => Number(v.trim()))
       .filter((v) => v > 0);
 
     if (editingProduct) {
-      await persistProductUpdate(editingProduct.id, {
+      // Only include image in updates if user explicitly set a value (including empty to clear)
+      // This ensures changes are actually persisted to the backend
+      const imageValue = formImage !== "" ? formImage : editingProduct.image;
+      const updated = await persistProductUpdate(editingProduct.id, {
         name: formName,
         brand: formBrand,
         category: formCategory,
         gender: formGender,
         ageRange: formAgeRange,
         volumes,
-        image: formImage || editingProduct.image,
+        image: imageValue,
+        description: editingProduct.description || "",
+        instagramUrl: editingProduct.instagramUrl || "",
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
       });
+      if (!updated) {
+        setSaveError("Не удалось сохранить изменения. Проверьте соединение и попробуйте снова.");
+        return;
+      }
+      showToast("Продукт сохранён");
     } else {
-      await addProduct({
+      const created = await addProduct({
         name: formName,
         brand: formBrand,
         category: formCategory,
@@ -532,9 +548,16 @@ export default function Admin() {
         image:
           formImage ||
           "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
+        description: "",
+        instagramUrl: "",
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
       });
+      if (!created) {
+        setSaveError("Не удалось создать продукт. Проверьте соединение и попробуйте снова.");
+        return;
+      }
+      showToast("Продукт создан");
     }
     resetForm();
   };
@@ -1047,6 +1070,12 @@ export default function Admin() {
                     </label>
                   </div>
                 </div>
+                {saveError && (
+                  <div className="flex items-center gap-2 mt-4 text-xs text-red-400">
+                    <AlertCircle size={14} />
+                    {saveError}
+                  </div>
+                )}
                 <div className="flex gap-3 mt-6">
                   <button
                     onClick={handleSave}
