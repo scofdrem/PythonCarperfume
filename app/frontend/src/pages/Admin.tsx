@@ -311,7 +311,7 @@ export default function Admin() {
 
   // Bulk edit state
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkModal, setBulkModal] = useState<null | "brand" | "category" | "tags">(null);
+  const [bulkModal, setBulkModal] = useState<null | "brand" | "category" | "tags" | "delete">(null);
   const [bulkBrandValue, setBulkBrandValue] = useState("");
   const [bulkCategoryValue, setBulkCategoryValue] = useState("");
   const [bulkFeatured, setBulkFeatured] = useState(false);
@@ -379,6 +379,17 @@ export default function Admin() {
     setBulkModal(null);
     setBulkFeatured(false);
     setBulkNew(false);
+    clearSelection();
+  };
+
+  const applyBulkDelete = async () => {
+    const ids = Array.from(selectedIds);
+    for (const id of ids) {
+      await persistProductDelete(id);
+    }
+    showToast(`Удалено ${ids.length} продуктов`);
+    setConfirmModal(false);
+    setBulkModal(null);
     clearSelection();
   };
 
@@ -724,6 +735,15 @@ export default function Admin() {
                   Изменить теги
                 </button>
                 <button
+                  onClick={() => {
+                    setBulkModal("delete");
+                    setConfirmModal(true);
+                  }}
+                  className="border border-red-500/30 text-red-400/70 text-xs tracking-wide px-3 py-1.5 hover:text-red-400 hover:border-red-500/50 transition-colors"
+                >
+                  Удалить продукты
+                </button>
+                <button
                   onClick={clearSelection}
                   className="ml-auto text-white/30 hover:text-white/60 text-xs transition-colors"
                 >
@@ -923,6 +943,7 @@ export default function Admin() {
                     {bulkModal === "brand" && `Изменить бренд на «${bulkBrandValue}» для ${selectedCount} продуктов?`}
                     {bulkModal === "category" && `Изменить категорию на «${bulkCategoryValue}» для ${selectedCount} продуктов?`}
                     {bulkModal === "tags" && `Обновить теги для ${selectedCount} продуктов?`}
+                    {bulkModal === "delete" && `Удалить ${selectedCount} продуктов?`}
                   </p>
                   <div className="flex gap-3">
                     <button
@@ -930,6 +951,7 @@ export default function Admin() {
                         if (bulkModal === "brand") applyBulkBrand();
                         else if (bulkModal === "category") applyBulkCategory();
                         else if (bulkModal === "tags") applyBulkTags();
+                        else if (bulkModal === "delete") applyBulkDelete();
                       }}
                       className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
                     >
