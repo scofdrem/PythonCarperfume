@@ -1,0 +1,27 @@
+{
+    "title": "categories",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "name": {
+            "type": "string",
+            "description": "Category name"
+        },
+        "slug": {
+            "type": "string",
+            "description": "URL-friendly slug"
+        },
+        "image": {
+            "type": "string",
+            "description": "Category image URL or storage path"
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "slug"
+    ]
+}

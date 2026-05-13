@@ -1,0 +1,23 @@
+{
+    "title": "site_content",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "content_key": {
+            "type": "string",
+            "description": "Unique key for the content item"
+        },
+        "content_value": {
+            "type": "string",
+            "description": "JSON string of content value",
+            "default": "{}"
+        }
+    },
+    "required": [
+        "id",
+        "content_key"
+    ]
+}

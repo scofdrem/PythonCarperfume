@@ -1,0 +1,23 @@
+{
+    "title": "brands",
+    "type": "object",
+    "properties": {
+        "id": {
+            "type": "integer",
+            "description": "Primary key, auto-increment"
+        },
+        "name": {
+            "type": "string",
+            "description": "Brand name"
+        },
+        "slug": {
+            "type": "string",
+            "description": "URL-friendly slug"
+        }
+    },
+    "required": [
+        "id",
+        "name",
+        "slug"
+    ]
+}
