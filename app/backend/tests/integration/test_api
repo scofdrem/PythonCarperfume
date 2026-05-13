@@ -1,0 +1,385 @@
+"""
+Integration tests for backend API endpoints
+"""
+
+import unittest
+import sys
+import os
+import json
+from unittest.mock import patch, MagicMock
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+from src.app import create_app
+from src.extensions import db
+from src.models import User, Aroma, AromaCategory, UserRating
+
+
+class BaseTestCase(unittest.TestCase):
+    """Base test case with app setup"""
+    
+    def setUp(self):
+        """Set up test client and database"""
+        self.app = create_app('testing')
+        self.client = self.app.test_client()
+        self.app_context = self.app.app_context()
+        self.app_context.push()
+        db.create_all()
+    
+    def tearDown(self):
+        """Clean up after tests"""
+        db.session.remove()
+        db.drop_all()
+        self.app_context.pop()
+
+
+class TestHealthEndpoint(BaseTestCase):
+    """Test health check endpoint"""
+    
+    def test_health_check(self):
+        """Test GET /api/health"""
+        response = self.client.get('/api/health')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('status', data)
+        self.assertEqual(data['status'], 'healthy')
+
+
+class TestAuthEndpoints(BaseTestCase):
+    """Test authentication endpoints"""
+    
+    def test_register_success(self):
+        """Test successful user registration"""
+        response = self.client.post('/api/auth/register', json={
+            'email': 'newuser@example.com',
+            'username': 'newuser',
+            'password': 'SecurePass123!'
+        })
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('user', data)
+        self.assertEqual(data['user']['email'], 'newuser@example.com')
+    
+    def test_register_duplicate_email(self):
+        """Test registration with duplicate email"""
+        # Create first user
+        self.client.post('/api/auth/register', json={
+            'email': 'existing@example.com',
+            'username': 'existinguser',
+            'password': 'SecurePass123!'
+        })
+        
+        # Try to register with same email
+        response = self.client.post('/api/auth/register', json={
+            'email': 'existing@example.com',
+            'username': 'differentuser',
+            'password': 'SecurePass123!'
+        })
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', data)
+    
+    def test_register_invalid_email(self):
+        """Test registration with invalid email"""
+        response = self.client.post('/api/auth/register', json={
+            'email': 'invalid-email',
+            'username': 'testuser',
+            'password': 'SecurePass123!'
+        })
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', data)
+    
+    def test_login_success(self):
+        """Test successful login"""
+        # Register user first
+        self.client.post('/api/auth/register', json={
+            'email': 'login@example.com',
+            'username': 'loginuser',
+            'password': 'SecurePass123!'
+        })
+        
+        # Login
+        response = self.client.post('/api/auth/login', json={
+            'email': 'login@example.com',
+            'password': 'SecurePass123!'
+        })
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('access_token', data)
+        self.assertIn('user', data)
+    
+    def test_login_invalid_credentials(self):
+        """Test login with invalid credentials"""
+        response = self.client.post('/api/auth/login', json={
+            'email': 'nonexistent@example.com',
+            'password': 'WrongPassword!'
+        })
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 401)
+        self.assertIn('error', data)
+
+
+class TestAromaEndpoints(BaseTestCase):
+    """Test aroma CRUD endpoints"""
+    
+    def _get_auth_token(self):
+        """Helper to get authentication token"""
+        self.client.post('/api/auth/register', json={
+            'email': 'testuser@example.com',
+            'username': 'testuser',
+            'password': 'SecurePass123!'
+        })
+        response = self.client.post('/api/auth/login', json={
+            'email': 'testuser@example.com',
+            'password': 'SecurePass123!'
+        })
+        return json.loads(response.data)['access_token']
+    
+    def _create_category(self):
+        """Helper to create a category"""
+        self.client.post('/api/categories', json={
+            'name': 'Floral',
+            'description': 'Flowery scents'
+        }, headers={'Authorization': f'Bearer {self._get_auth_token()}'})
+    
+    def test_get_aromas_empty(self):
+        """Test GET /api/aromas when no aromas exist"""
+        response = self.client.get('/api/aromas')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['total'], 0)
+        self.assertEqual(data['items'], [])
+    
+    def test_create_aroma_success(self):
+        """Test successful aroma creation"""
+        token = self._get_auth_token()
+        
+        response = self.client.post('/api/aromas', json={
+            'name': 'Rose Dream',
+            'description': 'A beautiful rose-based fragrance',
+            'notes': ['rose', 'jasmine', 'musk']
+        }, headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('aroma', data)
+        self.assertEqual(data['aroma']['name'], 'Rose Dream')
+    
+    def test_create_aroma_missing_fields(self):
+        """Test aroma creation with missing required fields"""
+        token = self._get_auth_token()
+        
+        response = self.client.post('/api/aromas', json={
+            'name': 'Incomplete Aroma'
+        }, headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', data)
+    
+    def test_get_aroma_by_id(self):
+        """Test GET /api/aromas/:id"""
+        token = self._get_auth_token()
+        
+        # Create aroma
+        create_response = self.client.post('/api/aromas', json={
+            'name': 'Test Aroma',
+            'description': 'A test aroma',
+            'notes': ['test']
+        }, headers={'Authorization': f'Bearer {token}'})
+        aroma_id = json.loads(create_response.data)['aroma']['id']
+        
+        # Get aroma
+        response = self.client.get(f'/api/aromas/{aroma_id}')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['name'], 'Test Aroma')
+    
+    def test_get_nonexistent_aroma(self):
+        """Test GET /api/aromas/:id with non-existent ID"""
+        response = self.client.get('/api/aromas/99999')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('error', data)
+    
+    def test_update_aroma(self):
+        """Test PUT /api/aromas/:id"""
+        token = self._get_auth_token()
+        
+        # Create aroma
+        create_response = self.client.post('/api/aromas', json={
+            'name': 'Original Name',
+            'description': 'Original description',
+            'notes': ['original']
+        }, headers={'Authorization': f'Bearer {token}'})
+        aroma_id = json.loads(create_response.data)['aroma']['id']
+        
+        # Update aroma
+        response = self.client.put(f'/api/aromas/{aroma_id}', json={
+            'name': 'Updated Name',
+            'description': 'Updated description'
+        }, headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['name'], 'Updated Name')
+        self.assertEqual(data['description'], 'Updated description')
+    
+    def test_delete_aroma(self):
+        """Test DELETE /api/aromas/:id"""
+        token = self._get_auth_token()
+        
+        # Create aroma
+        create_response = self.client.post('/api/aromas', json={
+            'name': 'To Delete',
+            'description': 'Will be deleted',
+            'notes': ['delete']
+        }, headers={'Authorization': f'Bearer {token}'})
+        aroma_id = json.loads(create_response.data)['aroma']['id']
+        
+        # Delete aroma
+        response = self.client.delete(f'/api/aromas/{aroma_id}', 
+                                      headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('message', data)
+        
+        # Verify deletion
+        get_response = self.client.get(f'/api/aromas/{aroma_id}')
+        self.assertEqual(get_response.status_code, 404)
+    
+    def test_search_aromas(self):
+        """Test GET /api/aromas with search parameters"""
+        token = self._get_auth_token()
+        
+        # Create test aromas
+        self.client.post('/api/aromas', json={
+            'name': 'Rose Paradise',
+            'description': 'Beautiful rose fragrance',
+            'notes': ['rose']
+        }, headers={'Authorization': f'Bearer {token}'})
+        
+        self.client.post('/api/aromas', json={
+            'name': 'Ocean Breeze',
+            'description': 'Fresh ocean scent',
+            'notes': ['sea', 'citrus']
+        }, headers={'Authorization': f'Bearer {token}'})
+        
+        # Search for "rose"
+        response = self.client.get('/api/aromas?search=rose')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['total'], 1)
+        self.assertEqual(data['items'][0]['name'], 'Rose Paradise')
+
+
+class TestRatingEndpoints(BaseTestCase):
+    """Test rating endpoints"""
+    
+    def _get_auth_token(self):
+        """Helper to get authentication token"""
+        self.client.post('/api/auth/register', json={
+            'email': 'rater@example.com',
+            'username': 'rater',
+            'password': 'SecurePass123!'
+        })
+        response = self.client.post('/api/auth/login', json={
+            'email': 'rater@example.com',
+            'password': 'SecurePass123!'
+        })
+        return json.loads(response.data)['access_token']
+    
+    def test_create_rating(self):
+        """Test POST /api/ratings"""
+        token = self._get_auth_token()
+        
+        # Create aroma first
+        aroma_response = self.client.post('/api/aromas', json={
+            'name': 'Rated Aroma',
+            'description': 'An aroma to be rated',
+            'notes': ['test']
+        }, headers={'Authorization': f'Bearer {token}'})
+        aroma_id = json.loads(aroma_response.data)['aroma']['id']
+        
+        # Create rating
+        response = self.client.post('/api/ratings', json={
+            'aroma_id': aroma_id,
+            'rating': 4.5,
+            'review': 'Excellent fragrance!'
+        }, headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('rating', data)
+        self.assertEqual(data['rating']['rating'], 4.5)
+    
+    def test_create_invalid_rating(self):
+        """Test POST /api/ratings with invalid rating value"""
+        token = self._get_auth_token()
+        
+        response = self.client.post('/api/ratings', json={
+            'aroma_id': 1,
+            'rating': 6.0,  # Invalid: should be <= 5
+            'review': 'Test'
+        }, headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('error', data)
+
+
+class TestRecommendationEndpoints(BaseTestCase):
+    """Test recommendation endpoints"""
+    
+    def _get_auth_token(self):
+        """Helper to get authentication token"""
+        self.client.post('/api/auth/register', json={
+            'email': 'recommender@example.com',
+            'username': 'recommender',
+            'password': 'SecurePass123!'
+        })
+        response = self.client.post('/api/auth/login', json={
+            'email': 'recommender@example.com',
+            'password': 'SecurePass123!'
+        })
+        return json.loads(response.data)['access_token']
+    
+    def test_get_recommendations(self):
+        """Test GET /api/recommendations"""
+        token = self._get_auth_token()
+        
+        response = self.client.get('/api/recommendations',
+                                   headers={'Authorization': f'Bearer {token}'})
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('recommendations', data)
+
+
+class TestNoteEndpoints(BaseTestCase):
+    """Test note endpoints"""
+    
+    def test_get_notes(self):
+        """Test GET /api/notes"""
+        response = self.client.get('/api/notes')
+        data = json.loads(response.data)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('notes', data)
+
+
+if __name__ == '__main__':
+    unittest.main()
