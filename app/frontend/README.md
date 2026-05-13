@@ -1,4 +1,4 @@
-# Shadcn-UI Template Usage Instructions
+# 1000Aromas Template Usage Instructions
 
 ## technology stack
 
