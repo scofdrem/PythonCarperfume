@@ -633,30 +633,30 @@ export default function Admin() {
     loadMailSettings();
   }, []);
 
-  const updateDraft = (updater: (prev: SiteContent) => SiteContent) => {
-    setDraft((prev) => updater(prev));
-    setSaved(false);
-  };
-
-  const [saving, setSaving] = useState(false);
-
-  const saveContent = async () => {
-    setSaving(true);
-    const ok = await persistSiteContent(draft);
-    setSaving(false);
-    if (ok) {
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } else {
-      setSaved(false);
-      // Still update local state even if backend save fails
-      setSiteContent(draft);
-      showToast("Не удалось сохранить изменения на сервере. Проверьте соединение и попробуйте снова.");
+  // Load users when Users tab is activated
+  useEffect(() => {
+    if (activeTab === "users") {
+      const loadUsers = async () => {
+        setUsersLoading(true);
+        setUsersMsg(null);
+        try {
+          const res = await adminApiCall("GET", "/api/v1/admin/account/users");
+          setUsersList(res.data || []);
+        } catch (err: any) {
+          console.error("Failed to load users:", err);
+          setUsersMsg({
+            type: "error",
+            text: err?.message || "Не удалось загрузить пользователей",
+          });
+        } finally {
+          setUsersLoading(false);
+        }
+      };
+      loadUsers();
     }
-  };
+  }, [activeTab]);
 
-  const resetDraft = () => {
-    setDraft(JSON.parse(JSON.stringify(siteContent)));
+  const updateDraft = (updater: (prev: SiteContent) => SiteContent) => {
     setSaved(false);
   };
 

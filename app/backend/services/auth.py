@@ -1,3 +1,4 @@
+import hashlib
 import logging
 import os
 import time
@@ -102,6 +103,57 @@ class AuthService:
         await self.db.commit()
 
         return state_data
+
+    def _verify_password(self, password: str, password_hash_with_salt: str) -> bool:
+        """Verify a password against a stored hash (format: salt:hash)."""
+        try:
+            if ":" not in password_hash_with_salt:
+                logger.warning("Password hash format is invalid (missing salt separator)")
+                return False
+
+            salt, stored_hash = password_hash_with_salt.split(":", 1)
+
+            # Hash the provided password with the same salt
+            key = hashlib.pbkdf2_hmac(
+                "sha256",
+                password.encode("utf-8"),
+                salt.encode("utf-8"),
+                100000,  # iterations - must match seed_admin_user.py
+            )
+            computed_hash = key.hex()
+
+            return computed_hash == stored_hash
+        except Exception as e:
+            logger.error(f"Error verifying password: {e}")
+            return False
+
+    async def authenticate_admin(self, username: str, password: str) -> Optional[User]:
+        """Authenticate admin user by username and password."""
+        # Look up user by login field
+        result = await self.db.execute(
+            select(User).where(User.login == username, User.role == "admin")
+        )
+        user: Optional[User] = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning(f"Admin login attempt with unknown username: {username}")
+            return None
+
+        if not user.password_hash:
+            logger.warning(f"Admin user {username} has no password hash configured")
+            return None
+
+        if not self._verify_password(password, user.password_hash):
+            logger.warning(f"Invalid password for admin user: {username}")
+            return None
+
+        # Update last_login
+        user.last_login = datetime.now(timezone.utc)
+        await self.db.commit()
+        await self.db.refresh(user)
+
+        logger.info(f"Admin user {username} authenticated successfully")
+        return user
 
 
 async def initialize_admin_user():

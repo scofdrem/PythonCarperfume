@@ -2,19 +2,25 @@ import { useEffect } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import BlogRoutes from './blog-routes';
 import Index from './pages/Index';
 import Catalogue from './pages/Catalogue';
 import Admin from './pages/Admin';
-import AuthCallback from './pages/AuthCallback';
 import AuthError from './pages/AuthError';
+import AdminLogin from './pages/AdminLogin';
 import { initSiteContentFromBackend } from '@/data/siteContent';
 import { initProductsFromBackend, initCategoriesFromBackend } from '@/data/productsStore';
+import { authApi } from './lib/auth';
 // MODULE_IMPORTS_START
 // MODULE_IMPORTS_END
 
 const queryClient = new QueryClient();
+
+// Redirect to admin login if no token is present
+const AuthCallbackHandler = () => {
+  return <Navigate to="/admin/login" replace />;
+};
 
 const AppRoutes = () => {
   useEffect(() => {
@@ -29,7 +35,8 @@ const AppRoutes = () => {
     <Route path="/catalogue" element={<Catalogue />} />
     <Route path="/admin" element={<Admin />} />
     {/* <Route path="/blog/*" element={<BlogRoutes />} /> */}
-    <Route path="/auth/callback" element={<AuthCallback />} />
+    <Route path="/admin/login" element={<AdminLogin />} />
+    <Route path="/auth/callback" element={<AuthCallbackHandler />} />
     <Route path="/auth/error" element={<AuthError />} />
     {/* MODULE_ROUTES_START */}
     {/* MODULE_ROUTES_END */}

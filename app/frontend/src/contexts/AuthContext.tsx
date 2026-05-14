@@ -6,6 +6,7 @@ import React, {
   ReactNode,
 } from 'react';
 import { authApi } from '../lib/auth';
+import { authApi as credentialAuthApi, LoginCredentials } from '../api/authApi';
 
 interface User {
   id: string;
@@ -19,7 +20,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  login: () => Promise<void>;
+  login: (credentials?: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   refetch: () => Promise<void>;
   isAdmin: boolean;
@@ -58,10 +59,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async () => {
+  const login = async (credentials?: LoginCredentials) => {
     try {
       setError(null);
-      await authApi.login();
+      if (credentials) {
+        // Use credential-based login
+        const response = await credentialAuthApi.login(credentials);
+        authApi.setToken(response.token);
+        setUser(response.user);
+        window.location.href = '/admin/dashboard';
+      } else {
+        // Fallback to OIDC login (redirects to /admin/login)
+        await authApi.login();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     }
