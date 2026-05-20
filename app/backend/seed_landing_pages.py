@@ -46,18 +46,170 @@ LANDING_PAGES = [
 
 LANDING_PRODUCTS = {
     "landing-1": [
-        {"name": "Golden Essence", "category": "Premium", "sort_order": 1},
-        {"name": "Royal Spice", "category": "Spicy", "sort_order": 2},
-        {"name": "Citrus Bloom", "category": "Fresh", "sort_order": 3},
-        {"name": "Velvet Musk", "category": "Premium", "sort_order": 4},
-        {"name": "Midnight Oud", "category": "Woody", "sort_order": 5},
+        {
+            "name": "Golden Essence",
+            "category": "Premium",
+            "price": 89.99,
+            "sort_order": 1,
+            "description": "A luxurious aromatic blend with golden undertones.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 89.99, "inventory": 20},
+                        {"label": "100ml", "price": 159.99, "inventory": 15},
+                        {"label": "200ml", "price": 279.99, "inventory": 8},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Royal Spice",
+            "category": "Spicy",
+            "price": 75.00,
+            "sort_order": 2,
+            "description": "Exotic spices blended into a royal aroma.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "30ml", "price": 75.00, "inventory": 25},
+                        {"label": "100ml", "price": 199.00, "inventory": 12},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Citrus Bloom",
+            "category": "Fresh",
+            "price": 65.00,
+            "sort_order": 3,
+            "description": "Fresh citrus notes that brighten the senses.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 65.00, "inventory": 30},
+                        {"label": "100ml", "price": 120.00, "inventory": 20},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Velvet Musk",
+            "category": "Premium",
+            "price": 110.00,
+            "sort_order": 4,
+            "description": "Smooth velvet musk with lingering warmth.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 110.00, "inventory": 18},
+                        {"label": "100ml", "price": 199.00, "inventory": 10},
+                        {"label": "250ml", "price": 349.00, "inventory": 5},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Midnight Oud",
+            "category": "Woody",
+            "price": 145.00,
+            "sort_order": 5,
+            "description": "Rich oud with deep midnight undertones.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 145.00, "inventory": 15},
+                        {"label": "100ml", "price": 269.00, "inventory": 8},
+                    ],
+                },
+            ],
+        },
     ],
     "landing-2": [
-        {"name": "Aqua Mist", "category": "Fresh", "sort_order": 1},
-        {"name": "Desert Rose", "category": "Floral", "sort_order": 2},
-        {"name": "Ocean Breeze", "category": "Fresh", "sort_order": 3},
-        {"name": "Sandalwood", "category": "Woody", "sort_order": 4},
-        {"name": "Jasmine Pearl", "category": "Floral", "sort_order": 5},
+        {
+            "name": "Aqua Mist",
+            "category": "Fresh",
+            "price": 55.00,
+            "sort_order": 1,
+            "description": "Light aquatic mist with ocean freshness.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 55.00, "inventory": 35},
+                        {"label": "100ml", "price": 99.00, "inventory": 22},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Desert Rose",
+            "category": "Floral",
+            "price": 70.00,
+            "sort_order": 2,
+            "description": "Delicate rose captured from desert winds.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 70.00, "inventory": 28},
+                        {"label": "100ml", "price": 129.00, "inventory": 14},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Ocean Breeze",
+            "category": "Fresh",
+            "price": 60.00,
+            "sort_order": 3,
+            "description": "Crisp ocean breeze in a bottle.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "30ml", "price": 60.00, "inventory": 40},
+                        {"label": "100ml", "price": 145.00, "inventory": 18},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Sandalwood",
+            "category": "Woody",
+            "price": 95.00,
+            "sort_order": 4,
+            "description": "Pure sandalwood essence, warm and woody.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 95.00, "inventory": 22},
+                        {"label": "100ml", "price": 175.00, "inventory": 12},
+                    ],
+                },
+            ],
+        },
+        {
+            "name": "Jasmine Pearl",
+            "category": "Floral",
+            "price": 80.00,
+            "sort_order": 5,
+            "description": "Jasmine blossoms distilled into pearl-like drops.",
+            "attributes": [
+                {
+                    "name": "Size",
+                    "options": [
+                        {"label": "50ml", "price": 80.00, "inventory": 25},
+                        {"label": "100ml", "price": 149.00, "inventory": 15},
+                    ],
+                },
+            ],
+        },
     ],
 }
 
@@ -104,8 +256,11 @@ async def seed():
                 product = LandingProduct(
                     catalogue_id=catalogue.id,
                     name=p["name"],
-                    category=p["category"],
-                    sort_order=p["sort_order"],
+                    category=p.get("category"),
+                    description=p.get("description"),
+                    price=p.get("price"),
+                    attributes=p.get("attributes"),
+                    sort_order=p.get("sort_order", 0),
                     is_active=True,
                 )
                 db.add(product)

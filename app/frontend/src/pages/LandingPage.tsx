@@ -50,6 +50,7 @@ const LandingPage: React.FC = () => {
   }, [loadData]);
 
   const handleHomeClick = () => {
+    // Navigate to root of current domain (stays on same domain)
     window.location.href = window.location.origin;
   };
 
@@ -73,14 +74,53 @@ const LandingPage: React.FC = () => {
   useEffect(() => {
     if (page) {
       document.title = page.seo_title || page.name;
-      const metaDesc = document.querySelector('meta[name="description"]');
-      if (metaDesc) metaDesc.setAttribute('content', page.seo_description || '');
-      const ogTitle = document.querySelector('meta[property="og:title"]');
-      if (ogTitle) ogTitle.setAttribute('content', page.seo_title || page.name);
-      const ogDesc = document.querySelector('meta[property="og:description"]');
-      if (ogDesc) ogDesc.setAttribute('content', page.seo_description || '');
+
+      // Update meta description
+      let metaDesc = document.querySelector('meta[name="description"]');
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.setAttribute('name', 'description');
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.setAttribute('content', page.seo_description || '');
+
+      // Update canonical link
+      let canonical = document.querySelector('link[rel="canonical"]');
+      if (!canonical) {
+        canonical = document.createElement('link');
+        canonical.setAttribute('rel', 'canonical');
+        document.head.appendChild(canonical);
+      }
+      canonical.setAttribute('href', `${window.location.origin}/landing/${slug}`);
+
+      // Update og:title
+      let ogTitle = document.querySelector('meta[property="og:title"]');
+      if (!ogTitle) {
+        ogTitle = document.createElement('meta');
+        ogTitle.setAttribute('property', 'og:title');
+        document.head.appendChild(ogTitle);
+      }
+      ogTitle.setAttribute('content', page.seo_title || page.name);
+
+      // Update og:description
+      let ogDesc = document.querySelector('meta[property="og:description"]');
+      if (!ogDesc) {
+        ogDesc = document.createElement('meta');
+        ogDesc.setAttribute('property', 'og:description');
+        document.head.appendChild(ogDesc);
+      }
+      ogDesc.setAttribute('content', page.seo_description || '');
+
+      // Update og:url
+      let ogUrl = document.querySelector('meta[property="og:url"]');
+      if (!ogUrl) {
+        ogUrl = document.createElement('meta');
+        ogUrl.setAttribute('property', 'og:url');
+        document.head.appendChild(ogUrl);
+      }
+      ogUrl.setAttribute('content', `${window.location.origin}/landing/${slug}`);
     }
-  }, [page]);
+  }, [page, slug]);
 
   if (loading) {
     return (

@@ -31,7 +31,7 @@ export default function Header() {
 
   // Home link resolves to current origin (stays on same domain)
   const homeLink = isLandingMode && landingSlug
-    ? `http://${window.location.host}/landing/${landingSlug}`
+    ? `${window.location.origin}/landing/${landingSlug}`
     : "/";
   
   const brandText = isLandingMode ? landingSlug?.toUpperCase().replace(/-/g, " ") : "1000 АРОМАТОВ";

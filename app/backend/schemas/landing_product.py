@@ -7,8 +7,9 @@ class LandingProductBase(BaseModel):
     catalogue_id: int
     name: str
     description: Optional[str] = None
-    image: Optional[str] = None
+    image_url: Optional[str] = None
     category: Optional[str] = None
+    price: Optional[float] = None  # default price when no variant selected
     attributes: Optional[List[Dict[str, Any]]] = None  # configurable variants: [{name, options:[{label, price, inventory}]}]
     sort_order: Optional[int] = 0
     is_active: Optional[bool] = True
@@ -21,8 +22,9 @@ class LandingProductCreate(LandingProductBase):
 class LandingProductUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    image: Optional[str] = None
+    image_url: Optional[str] = None
     category: Optional[str] = None
+    price: Optional[float] = None
     attributes: Optional[List[Dict[str, Any]]] = None
     sort_order: Optional[int] = None
     is_active: Optional[bool] = None

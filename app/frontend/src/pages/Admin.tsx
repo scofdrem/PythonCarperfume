@@ -28,17 +28,14 @@ import Footer from "@/components/Footer";
 import LandingPageAdmin from "@/components/landing/LandingPageAdmin";
 
 type Tab =
-  | "products"
-  | "brands"
-  | "hero"
-  | "headings"
-  | "about"
-  | "footer"
-  | "categories"
+  | "catalogue-management"
+  | "landing-content"
   | "account"
   | "users"
   | "settings"
   | "landing-pages";
+
+type CatalogueSubtab = "products" | "brands" | "categories";
 
 interface AdminUser {
   id: string;
@@ -362,7 +359,8 @@ function Field({
 /* ─── Main Admin Component ─── */
 export default function Admin() {
   const siteContent = useSiteContent();
-  const [activeTab, setActiveTab] = useState<Tab>("products");
+  const [activeTab, setActiveTab] = useState<Tab>("catalogue-management");
+  const [catalogueSubtab, setCatalogueSubtab] = useState<CatalogueSubtab>("products");
 
   // Products state — from reactive store (persisted to backend)
   const { products: productList } = useProductStore();
@@ -766,13 +764,8 @@ export default function Admin() {
   };
 
   const tabs: { key: Tab; label: string }[] = [
-    { key: "products", label: "Продукты" },
-    { key: "brands", label: "Бренды" },
-    { key: "hero", label: "Герой-баннер" },
-    { key: "headings", label: "Заголовки" },
-    { key: "about", label: "О нас" },
-    { key: "footer", label: "Подвал" },
-    { key: "categories", label: "Категории" },
+    { key: "catalogue-management", label: "Каталог" },
+    { key: "landing-content", label: "Управление Лэндингом 1000 Ароматов" },
     { key: "account", label: "Аккаунт" },
     { key: "users", label: "Пользователи" },
     { key: "settings", label: "Настройки" },
@@ -819,9 +812,26 @@ export default function Admin() {
         </div>
 
         {/* ═══════════════════════════════════════════ */}
-        {/* PRODUCTS TAB */}
+        {/* CATALOGUE MANAGEMENT TAB */}
         {/* ═══════════════════════════════════════════ */}
-        {activeTab === "products" && (
+        {activeTab === "catalogue-management" && (
+          <>
+            <div className="flex gap-1 mb-6 border-b border-white/5">
+              {(["products", "brands", "categories"] as CatalogueSubtab[]).map((sub) => (
+                <button
+                  key={sub}
+                  onClick={() => setCatalogueSubtab(sub)}
+                  className={`px-3 py-2 text-[11px] tracking-wide transition-colors ${
+                    catalogueSubtab === sub
+                      ? "text-[#C69B56] border-b border-[#C69B56]"
+                      : "text-white/30 hover:text-white/60"
+                  }`}
+                >
+                  {sub === "products" ? "Продукты" : sub === "brands" ? "Бренды" : "Категории"}
+                </button>
+              ))}
+            </div>
+            {catalogueSubtab === "products" && (
           <div>
             {/* Toast */}
             {toast && (
@@ -1357,12 +1367,9 @@ export default function Admin() {
               </table>
             </div>
           </div>
-        )}
+            )}
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* BRANDS TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "brands" && (
+            {catalogueSubtab === "brands" && (
           <div>
             <div className="flex items-center justify-between mb-6">
               <p className="text-white/50 text-sm">
@@ -1504,16 +1511,94 @@ export default function Admin() {
               </div>
             )}
           </div>
+            )}
+
+            {catalogueSubtab === "categories" && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-white/50 text-sm">
+                {categoryList.length} категорий
+              </p>
+              <button
+                onClick={() => {
+                  setEditingCategory(null);
+                  setFormCatName("");
+                  setFormCatSlug("");
+                  setFormCatImage("");
+                  setShowAddCategoryForm(true);
+                }}
+                className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
+              >
+                + Добавить категорию
+              </button>
+            </div>
+
+            {showAddCategoryForm && (
+              <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+                <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
+                  {editingCategory ? "Редактировать категорию" : "Новая категория"}
+                </h3>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <Field label="Название *" value={formCatName} onChange={(v) => { setFormCatName(v); if (!editingCategory) { setFormCatSlug(v.toLowerCase().replace(/[^a-z0-9а-яё]+/gi, "-").replace(/^-|-$/g, "")); }}} placeholder="Например: Нишевая" />
+                  <Field label="Slug (URL-идентификатор) *" value={formCatSlug} onChange={setFormCatSlug} placeholder="Например: niche" />
+                  <div className="sm:col-span-2"><ImageUpload label="Изображение" value={formCatImage} onChange={setFormCatImage} /></div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button onClick={async () => { if (!formCatName.trim() || !formCatSlug.trim()) return; if (editingCategory) { await persistCategoryUpdate(editingCategory.slug, { name: formCatName.trim(), slug: formCatSlug.trim(), image: formCatImage || editingCategory.image }); setCategoryList((prev) => prev.map((c) => c.slug === editingCategory.slug ? { name: formCatName.trim(), slug: formCatSlug.trim(), image: formCatImage || c.image } : c)); } else { const created = await addCategory({ name: formCatName.trim(), slug: formCatSlug.trim(), image: formCatImage || "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80" }); if (created) { setCategoryList((prev) => [...prev, created]); } } setShowAddCategoryForm(false); setEditingCategory(null); setFormCatName(""); setFormCatSlug(""); setFormCatImage(""); }} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">
+                    {editingCategory ? "Сохранить" : "Добавить"}
+                  </button>
+                  <button onClick={() => { setShowAddCategoryForm(false); setEditingCategory(null); setFormCatName(""); setFormCatSlug(""); setFormCatImage(""); }} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">
+                    Отмена
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
+                    <th className="text-left py-3 px-2">Изображение</th>
+                    <th className="text-left py-3 px-2">Название</th>
+                    <th className="text-left py-3 px-2">Slug</th>
+                    <th className="text-left py-3 px-2">Продуктов</th>
+                    <th className="text-right py-3 px-2">Действия</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryList.map((cat) => (
+                    <tr key={cat.slug} className="border-b border-white/5 hover:bg-white/[0.02]">
+                      <td className="py-3 px-2"><img src={cat.image} alt={cat.name} className="w-10 h-10 object-cover rounded-sm" /></td>
+                      <td className="py-3 px-2 text-white/80">{cat.name}</td>
+                      <td className="py-3 px-2 text-white/40 text-xs font-mono">{cat.slug}</td>
+                      <td className="py-3 px-2 text-[#C69B56]/60 text-xs">{productList.filter((p) => p.category === cat.slug).length}</td>
+                      <td className="py-3 px-2 text-right">
+                        <button onClick={() => { setEditingCategory(cat); setFormCatName(cat.name); setFormCatSlug(cat.slug); setFormCatImage(cat.image); setShowAddCategoryForm(true); }} className="text-white/40 hover:text-[#C69B56] text-xs mr-3 transition-colors">Изменить</button>
+                        <button onClick={async () => { await persistCategoryDelete(cat.slug); setCategoryList((prev) => prev.filter((c) => c.slug !== cat.slug)); }} className="text-white/40 hover:text-red-400 text-xs transition-colors">Удалить</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+            )}
+          </>
         )}
 
         {/* ═══════════════════════════════════════════ */}
-        {/* HERO BANNER TAB */}
+        {/* LANDING CONTENT TAB */}
         {/* ═══════════════════════════════════════════ */}
-        {activeTab === "hero" && (
+        {activeTab === "landing-content" && (
           <div>
             <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-              Редактирование героя-баннера
+              Управление Лэндингом 1000 Ароматов
             </h3>
+
+            {/* ─── СЕКЦИЯ: Герой-Баннер ─── */}
+            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-2">
+              Герой-Баннер
+            </h4>
 
             <div className="bg-[#1A1A1A] border border-white/10 p-6">
               <div className="grid sm:grid-cols-2 gap-6">
@@ -1640,17 +1725,11 @@ export default function Admin() {
                 )}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* SECTION HEADINGS TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "headings" && (
-          <div>
-            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-              Редактирование заголовков секций
-            </h3>
+            {/* ─── СЕКЦИЯ: Заголовки ─── */}
+            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
+              Заголовки
+            </h4>
 
             <div className="bg-[#1A1A1A] border border-white/10 p-6">
               <div className="grid sm:grid-cols-2 gap-6">
@@ -1660,10 +1739,7 @@ export default function Admin() {
                   onChange={(v) =>
                     updateDraft((prev) => ({
                       ...prev,
-                      sectionHeadings: {
-                        ...prev.sectionHeadings,
-                        categories: v,
-                      },
+                      sectionHeadings: { ...prev.sectionHeadings, categories: v },
                     }))
                   }
                 />
@@ -1673,10 +1749,7 @@ export default function Admin() {
                   onChange={(v) =>
                     updateDraft((prev) => ({
                       ...prev,
-                      sectionHeadings: {
-                        ...prev.sectionHeadings,
-                        featured: v,
-                      },
+                      sectionHeadings: { ...prev.sectionHeadings, featured: v },
                     }))
                   }
                 />
@@ -1686,10 +1759,7 @@ export default function Admin() {
                   onChange={(v) =>
                     updateDraft((prev) => ({
                       ...prev,
-                      sectionHeadings: {
-                        ...prev.sectionHeadings,
-                        newArrivals: v,
-                      },
+                      sectionHeadings: { ...prev.sectionHeadings, newArrivals: v },
                     }))
                   }
                 />
@@ -1704,7 +1774,6 @@ export default function Admin() {
                   }
                 />
               </div>
-
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={saveContent}
@@ -1719,94 +1788,46 @@ export default function Admin() {
                   Сбросить
                 </button>
                 {saved && (
-                  <span className="text-green-400 text-xs self-center">
-                    ✓ Сохранено
-                  </span>
+                  <span className="text-green-400 text-xs self-center">✓ Сохранено</span>
                 )}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* ABOUT US TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "about" && (
-          <div>
-            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-              Редактирование секции «О нас»
-            </h3>
+            {/* ─── СЕКЦИЯ: О Нас ─── */}
+            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
+              О Нас
+            </h4>
 
-            {/* Banners */}
-            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+            {/* Баннеры */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-4">
               <div className="flex items-center justify-between mb-4">
-                <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase">
-                  Баннеры
-                </h4>
-                <button
-                  onClick={addBanner}
-                  className="text-[#C69B56] text-xs tracking-wide hover:text-[#d4aa65] transition-colors"
-                >
+                <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase">Баннеры</h4>
+                <button onClick={addBanner} className="text-[#C69B56] text-xs tracking-wide hover:text-[#d4aa65] transition-colors">
                   + Добавить баннер
                 </button>
               </div>
-
               <div className="space-y-4">
                 {draft.about.banners.map((banner, i) => (
-                  <div
-                    key={i}
-                    className="bg-black border border-white/5 p-4"
-                  >
+                  <div key={i} className="bg-black border border-white/5 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-white/30 text-[10px] uppercase tracking-wider">
-                        Баннер {i + 1}
-                      </span>
-                      <button
-                        onClick={() => removeBanner(i)}
-                        className="text-white/30 hover:text-red-400 text-xs transition-colors"
-                      >
-                        Удалить
-                      </button>
+                      <span className="text-white/30 text-[10px] uppercase tracking-wider">Баннер {i + 1}</span>
+                      <button onClick={() => removeBanner(i)} className="text-white/30 hover:text-red-400 text-xs transition-colors">Удалить</button>
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4">
-                      <Field
-                        label="Заголовок"
-                        value={banner.title}
-                        onChange={(v) => updateBanner(i, "title", v)}
-                      />
-                      <Field
-                        label="Ссылка (URL)"
-                        value={banner.link}
-                        onChange={(v) => updateBanner(i, "link", v)}
-                        placeholder="/catalogue или https://..."
-                      />
+                      <Field label="Заголовок" value={banner.title} onChange={(v) => updateBanner(i, "title", v)} />
+                      <Field label="Ссылка (URL)" value={banner.link} onChange={(v) => updateBanner(i, "link", v)} placeholder="/catalogue или https://..." />
                       <div className="sm:col-span-2">
-                        <ImageUpload
-                          label="Изображение баннера"
-                          value={banner.image}
-                          onChange={(v) => updateBanner(i, "image", v)}
-                          previewWidth={200}
-                          previewHeight={160}
-                        />
+                        <ImageUpload label="Изображение баннера" value={banner.image} onChange={(v) => updateBanner(i, "image", v)} previewWidth={200} previewHeight={160} />
                       </div>
                     </div>
-                    {/* Banner preview */}
                     {banner.image && (
                       <div className="mt-3 border border-white/5 overflow-hidden">
-                        <p className="text-white/20 text-[10px] uppercase tracking-wider px-3 py-1 bg-black/50">
-                          Предпросмотр
-                        </p>
+                        <p className="text-white/20 text-[10px] uppercase tracking-wider px-3 py-1 bg-black/50">Предпросмотр</p>
                         <div className="relative w-[200px] h-[160px] overflow-hidden">
-                          <img
-                            src={banner.image}
-                            alt={banner.title}
-                            className="w-full h-full object-cover opacity-50"
-                          />
+                          <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-50" />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <span className="text-white text-sm font-medium tracking-wide">
-                              {banner.title}
-                            </span>
+                            <span className="text-white text-sm font-medium tracking-wide">{banner.title}</span>
                           </div>
                         </div>
                       </div>
@@ -1814,505 +1835,76 @@ export default function Admin() {
                   </div>
                 ))}
               </div>
-
               {draft.about.banners.length === 0 && (
                 <div className="text-center py-6">
-                  <p className="text-white/30 text-xs">Нет баннеров. Нажмите «+ Добавить баннер» чтобы создать.</p>
+                  <p className="text-white/30 text-xs">Нет баннеров. Нажмите «+ Добавить баннер».</p>
                 </div>
               )}
             </div>
 
-            {/* Logo Upload */}
-            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
-              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
-                Логотип
-              </h4>
-              <p className="text-white/30 text-[10px] mb-4">
-                Рекомендуется квадратное изображение. Логотип отображается в шапке сайта в круглом формате (40×40 px / 48×48 px).
-              </p>
-              <ImageUpload
-                label="Логотип сайта"
-                value={draft.about.logo || "/logo.jpg"}
-                onChange={(v) =>
-                  updateDraft((prev) => ({
-                    ...prev,
-                    about: { ...prev.about, logo: v },
-                  }))
-                }
-                folder="logos"
-                previewWidth={80}
-                previewHeight={80}
-              />
+            {/* Логотип */}
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-4">
+              <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase mb-4">Логотип</h4>
+              <p className="text-white/30 text-[10px] mb-4">Рекомендуется квадратное изображение (40×40 px / 48×48 px).</p>
+              <ImageUpload label="Логотип сайта" value={draft.about.logo || "/logo.jpg"} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, logo: v } }))} folder="logos" previewWidth={80} previewHeight={80} />
             </div>
 
-            {/* About Details */}
+            {/* Описание и контакты */}
             <div className="bg-[#1A1A1A] border border-white/10 p-6">
-              <h4 className="text-white/70 text-xs tracking-[0.1em] uppercase mb-4">
-                Описание и контакты
-              </h4>
+              <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase mb-4">Описание и контакты</h4>
               <div className="grid sm:grid-cols-2 gap-4">
-                <Field
-                  label="Название"
-                  value={draft.about.title}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      about: { ...prev.about, title: v },
-                    }))
-                  }
-                />
+                <Field label="Название" value={draft.about.title} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, title: v } }))} />
                 <div />
                 <div className="sm:col-span-2">
-                  <Field
-                    label="Описание — абзац 1"
-                    value={draft.about.description1}
-                    onChange={(v) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        about: { ...prev.about, description1: v },
-                      }))
-                    }
-                    rows={3}
-                  />
+                  <Field label="Описание — абзац 1" value={draft.about.description1} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, description1: v } }))} rows={3} />
                 </div>
                 <div className="sm:col-span-2">
-                  <Field
-                    label="Описание — абзац 2"
-                    value={draft.about.description2}
-                    onChange={(v) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        about: { ...prev.about, description2: v },
-                      }))
-                    }
-                    rows={3}
-                  />
+                  <Field label="Описание — абзац 2" value={draft.about.description2} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, description2: v } }))} rows={3} />
                 </div>
-                <Field
-                  label="Локация"
-                  value={draft.about.location}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      about: { ...prev.about, location: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Телефон"
-                  value={draft.about.phone}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      about: { ...prev.about, phone: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Email"
-                  value={draft.about.email}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      about: { ...prev.about, email: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Часы работы"
-                  value={draft.about.workingHours}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      about: { ...prev.about, workingHours: v },
-                    }))
-                  }
-                />
+                <Field label="Локация" value={draft.about.location} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, location: v } }))} />
+                <Field label="Телефон" value={draft.about.phone} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, phone: v } }))} />
+                <Field label="Email" value={draft.about.email} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, email: v } }))} />
+                <Field label="Часы работы" value={draft.about.workingHours} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, workingHours: v } }))} />
                 <div className="sm:col-span-2">
-                  <Field
-                    label="URL карты"
-                    value={draft.about.mapUrl}
-                    onChange={(v) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        about: { ...prev.about, mapUrl: v },
-                      }))
-                    }
-                    placeholder="https://www.openstreetmap.org/..."
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const url = buildMapUrl(draft.about.location);
-                      if (url) {
-                        updateDraft((prev) => ({
-                          ...prev,
-                          about: { ...prev.about, mapUrl: url },
-                        }));
-                      }
-                    }}
-                    className="mt-2 text-xs text-[#C69B56] hover:text-[#d4aa65] transition-colors tracking-[0.1em] uppercase"
-                  >
+                  <Field label="URL карты" value={draft.about.mapUrl} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, mapUrl: v } }))} placeholder="https://www.openstreetmap.org/..." />
+                  <button type="button" onClick={() => { const url = buildMapUrl(draft.about.location); if (url) updateDraft((prev) => ({ ...prev, about: { ...prev.about, mapUrl: url } })); }} className="mt-2 text-xs text-[#C69B56] hover:text-[#d4aa65] transition-colors tracking-[0.1em] uppercase">
                     🔄 Сгенерировать из локации
                   </button>
                 </div>
               </div>
-
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={saveContent}
-                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                >
-                  Сохранить
-                </button>
-                <button
-                  onClick={resetDraft}
-                  className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                >
-                  Сбросить
-                </button>
-                {saved && (
-                  <span className="text-green-400 text-xs self-center">
-                    ✓ Сохранено
-                  </span>
-                )}
+                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
+                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
+                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* FOOTER TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "footer" && (
-          <div>
-            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-              Редактирование подвала
-            </h3>
+            {/* ─── СЕКЦИЯ: Подвал ─── */}
+            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
+              Подвал
+            </h4>
 
             <div className="bg-[#1A1A1A] border border-white/10 p-6">
               <div className="grid sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
-                  <Field
-                    label="Описание бренда"
-                    value={draft.footer.brandDescription}
-                    onChange={(v) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        footer: { ...prev.footer, brandDescription: v },
-                      }))
-                    }
-                    rows={2}
-                  />
+                  <Field label="Описание бренда" value={draft.footer.brandDescription} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, brandDescription: v } }))} rows={2} />
                 </div>
-                <Field
-                  label="Telegram"
-                  value={draft.footer.telegram}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, telegram: v },
-                    }))
-                  }
-                  placeholder="@username"
-                />
-                <Field
-                  label="Viber"
-                  value={draft.footer.viber}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, viber: v },
-                    }))
-                  }
-                  placeholder="+375 (XX) XXX-XX-XX"
-                />
-                <Field
-                  label="Instagram"
-                  value={draft.footer.instagram}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, instagram: v },
-                    }))
-                  }
-                  placeholder="@username"
-                />
-                <Field
-                  label="Email"
-                  value={draft.footer.email}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, email: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Телефон"
-                  value={draft.footer.phone}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, phone: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Копирайт"
-                  value={draft.footer.copyright}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, copyright: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Текст «Политика конфиденциальности»"
-                  value={draft.footer.privacyPolicyText}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, privacyPolicyText: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Текст «Оферта»"
-                  value={draft.footer.offerText}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, offerText: v },
-                    }))
-                  }
-                />
-                <PdfUpload
-                  label="PDF — Политика конфиденциальности"
-                  value={draft.footer.privacyPolicyPdf}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, privacyPolicyPdf: v },
-                    }))
-                  }
-                />
-                <PdfUpload
-                  label="PDF — Оферта"
-                  value={draft.footer.offerPdf}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      footer: { ...prev.footer, offerPdf: v },
-                    }))
-                  }
-                />
+                <Field label="Telegram" value={draft.footer.telegram} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, telegram: v } }))} placeholder="@username" />
+                <Field label="Viber" value={draft.footer.viber} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, viber: v } }))} placeholder="+375 (XX) XXX-XX-XX" />
+                <Field label="Instagram" value={draft.footer.instagram} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, instagram: v } }))} placeholder="@username" />
+                <Field label="Email" value={draft.footer.email} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, email: v } }))} />
+                <Field label="Телефон" value={draft.footer.phone} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, phone: v } }))} />
+                <Field label="Копирайт" value={draft.footer.copyright} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, copyright: v } }))} />
+                <Field label="Текст «Политика конфиденциальности»" value={draft.footer.privacyPolicyText} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, privacyPolicyText: v } }))} />
+                <Field label="Текст «Оферта»" value={draft.footer.offerText} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, offerText: v } }))} />
+                <PdfUpload label="PDF — Политика конфиденциальности" value={draft.footer.privacyPolicyPdf} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, privacyPolicyPdf: v } }))} />
+                <PdfUpload label="PDF — Оферта" value={draft.footer.offerPdf} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, offerPdf: v } }))} />
               </div>
-
               <div className="flex gap-3 mt-6">
-                <button
-                  onClick={saveContent}
-                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                >
-                  Сохранить
-                </button>
-                <button
-                  onClick={resetDraft}
-                  className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                >
-                  Сбросить
-                </button>
-                {saved && (
-                  <span className="text-green-400 text-xs self-center">
-                    ✓ Сохранено
-                  </span>
-                )}
+                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
+                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
+                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ═══════════════════════════════════════════ */}
-        {/* CATEGORIES TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "categories" && (
-          <div>
-            <div className="flex items-center justify-between mb-6">
-              <p className="text-white/50 text-sm">
-                {categoryList.length} категорий
-              </p>
-              <button
-                onClick={() => {
-                  setEditingCategory(null);
-                  setFormCatName("");
-                  setFormCatSlug("");
-                  setFormCatImage("");
-                  setShowAddCategoryForm(true);
-                }}
-                className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-              >
-                + Добавить категорию
-              </button>
-            </div>
-
-            {/* Add/Edit Category Form */}
-            {showAddCategoryForm && (
-              <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
-                <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
-                  {editingCategory ? "Редактировать категорию" : "Новая категория"}
-                </h3>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <Field
-                    label="Название *"
-                    value={formCatName}
-                    onChange={(v) => {
-                      setFormCatName(v);
-                      if (!editingCategory) {
-                        setFormCatSlug(
-                          v
-                            .toLowerCase()
-                            .replace(/[^a-z0-9а-яё]+/gi, "-")
-                            .replace(/^-|-$/g, "")
-                        );
-                      }
-                    }}
-                    placeholder="Например: Нишевая"
-                  />
-                  <Field
-                    label="Slug (URL-идентификатор) *"
-                    value={formCatSlug}
-                    onChange={setFormCatSlug}
-                    placeholder="Например: niche"
-                  />
-                  <div className="sm:col-span-2">
-                    <ImageUpload
-                      label="Изображение"
-                      value={formCatImage}
-                      onChange={setFormCatImage}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={async () => {
-                      if (!formCatName.trim() || !formCatSlug.trim()) return;
-                      if (editingCategory) {
-                        await persistCategoryUpdate(editingCategory.slug, {
-                          name: formCatName.trim(),
-                          slug: formCatSlug.trim(),
-                          image: formCatImage || editingCategory.image,
-                        });
-                        setCategoryList((prev) =>
-                          prev.map((c) =>
-                            c.slug === editingCategory.slug
-                              ? {
-                                  name: formCatName.trim(),
-                                  slug: formCatSlug.trim(),
-                                  image: formCatImage || c.image,
-                                }
-                              : c
-                          )
-                        );
-                      } else {
-                        const created = await addCategory({
-                          name: formCatName.trim(),
-                          slug: formCatSlug.trim(),
-                          image:
-                            formCatImage ||
-                            "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
-                        });
-                        if (created) {
-                          setCategoryList((prev) => [...prev, created]);
-                        }
-                      }
-                      setShowAddCategoryForm(false);
-                      setEditingCategory(null);
-                      setFormCatName("");
-                      setFormCatSlug("");
-                      setFormCatImage("");
-                    }}
-                    className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                  >
-                    {editingCategory ? "Сохранить" : "Добавить"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowAddCategoryForm(false);
-                      setEditingCategory(null);
-                      setFormCatName("");
-                      setFormCatSlug("");
-                      setFormCatImage("");
-                    }}
-                    className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                  >
-                    Отмена
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Category Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-white/40 text-xs tracking-wide uppercase">
-                    <th className="text-left py-3 px-2">Изображение</th>
-                    <th className="text-left py-3 px-2">Название</th>
-                    <th className="text-left py-3 px-2">Slug</th>
-                    <th className="text-left py-3 px-2">Продуктов</th>
-                    <th className="text-right py-3 px-2">Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categoryList.map((cat) => (
-                    <tr
-                      key={cat.slug}
-                      className="border-b border-white/5 hover:bg-white/[0.02]"
-                    >
-                      <td className="py-3 px-2">
-                        <img
-                          src={cat.image}
-                          alt={cat.name}
-                          className="w-10 h-10 object-cover rounded-sm"
-                        />
-                      </td>
-                      <td className="py-3 px-2 text-white/80">{cat.name}</td>
-                      <td className="py-3 px-2 text-white/40 text-xs font-mono">
-                        {cat.slug}
-                      </td>
-                      <td className="py-3 px-2 text-[#C69B56]/60 text-xs">
-                        {productList.filter((p) => p.category === cat.slug).length}
-                      </td>
-                      <td className="py-3 px-2 text-right">
-                        <button
-                          onClick={() => {
-                            setEditingCategory(cat);
-                            setFormCatName(cat.name);
-                            setFormCatSlug(cat.slug);
-                            setFormCatImage(cat.image);
-                            setShowAddCategoryForm(true);
-                          }}
-                          className="text-white/40 hover:text-[#C69B56] text-xs mr-3 transition-colors"
-                        >
-                          Изменить
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await persistCategoryDelete(cat.slug);
-                            setCategoryList((prev) =>
-                              prev.filter((c) => c.slug !== cat.slug)
-                            );
-                          }}
-                          className="text-white/40 hover:text-red-400 text-xs transition-colors"
-                        >
-                          Удалить
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
