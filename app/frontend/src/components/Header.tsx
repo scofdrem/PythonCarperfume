@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useSiteContent } from "@/data/siteContent";
 import { resolveImageUrl } from "@/utils/storage";
@@ -7,8 +7,13 @@ import { resolveImageUrl } from "@/utils/storage";
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const params = useParams();
   const siteContent = useSiteContent();
   const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+
+  // Detect landing mode from URL
+  const landingSlug = params.landingSlug || params.slug || null;
+  const isLandingMode = Boolean(landingSlug) && location.pathname.startsWith("/landing/");
 
   // Resolve logo URL when site content changes
   useEffect(() => {
@@ -24,11 +29,24 @@ export default function Header() {
     }
   }, [siteContent.about.logo]);
 
-  const navLinks = [
-    { name: "Каталог", path: "/catalogue" },
-    { name: "Бренды", path: "/catalogue?tab=brands" },
-    { name: "О нас", path: "/#about" },
-  ];
+  // Home link resolves to current origin (stays on same domain)
+  const homeLink = isLandingMode && landingSlug
+    ? `http://${window.location.host}/landing/${landingSlug}`
+    : "/";
+  
+  const brandText = isLandingMode ? landingSlug?.toUpperCase().replace(/-/g, " ") : "1000 АРОМАТОВ";
+  const brandSubtext = isLandingMode ? "КАТАЛОГ" : "ПАРФЮМ НА РАСПИВ";
+
+  const navLinks = isLandingMode && landingSlug
+    ? [
+        { name: "Каталог", path: `/landing/${landingSlug}?tab=catalogue` },
+        { name: "О нас", path: `/landing/${landingSlug}#about` },
+      ]
+    : [
+        { name: "Каталог", path: "/catalogue" },
+        { name: "Бренды", path: "/catalogue?tab=brands" },
+        { name: "О нас", path: "/#about" },
+      ];
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-[#C69B56]/20">
@@ -42,22 +60,22 @@ export default function Header() {
             <Menu size={24} />
           </button>
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 shrink-0">
+          {/* Logo - context-aware: resolves to current domain */}
+          <a href={homeLink} className="flex items-center gap-3 shrink-0">
             <img
               src={logoUrl}
-              alt="1000 АРОМАТОВ"
+              alt={isLandingMode ? landingSlug : "1000 АРОМАТОВ"}
               className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
             />
             <div className="hidden sm:block">
               <div className="text-[#C69B56] text-lg font-semibold tracking-[0.2em] leading-tight">
-                1000 АРОМАТОВ
+                {brandText}
               </div>
               <div className="text-[#C69B56]/60 text-[10px] tracking-[0.15em] leading-tight">
-                ПАРФЮМ НА РАСПИВ
+                {brandSubtext}
               </div>
             </div>
-          </Link>
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden sm:flex items-center gap-8">
@@ -75,8 +93,6 @@ export default function Header() {
               </Link>
             ))}
           </nav>
-
-
         </div>
       </div>
 

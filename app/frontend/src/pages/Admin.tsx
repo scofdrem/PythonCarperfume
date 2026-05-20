@@ -25,6 +25,7 @@ import {
 } from "@/data/productsStore";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import LandingPageAdmin from "@/components/landing/LandingPageAdmin";
 
 type Tab =
   | "products"
@@ -36,7 +37,8 @@ type Tab =
   | "categories"
   | "account"
   | "users"
-  | "settings";
+  | "settings"
+  | "landing-pages";
 
 interface AdminUser {
   id: string;
@@ -774,6 +776,7 @@ export default function Admin() {
     { key: "account", label: "Аккаунт" },
     { key: "users", label: "Пользователи" },
     { key: "settings", label: "Настройки" },
+    { key: "landing-pages", label: "Landing Pages" },
   ];
 
   return (
@@ -2965,6 +2968,13 @@ export default function Admin() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ═══════════════════════════════════════════ */}
+        {/* LANDING PAGES TAB */}
+        {/* ═══════════════════════════════════════════ */}
+        {activeTab === "landing-pages" && (
+          <LandingPageAdmin />
         )}
       </div>
 
