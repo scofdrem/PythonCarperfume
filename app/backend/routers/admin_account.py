@@ -1,5 +1,8 @@
+import hashlib
+import hmac
 import logging
 import re
+import secrets
 from typing import Optional
 
 from core.database import get_db
@@ -12,6 +15,30 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+
+# ---------- Password Hashing Utilities ----------
+
+def generate_salt() -> str:
+    """Generate a secure random salt."""
+    return secrets.token_hex(32)
+
+
+def hash_password(password: str, salt: str) -> str:
+    """Hash a password with salt using PBKDF2-SHA256."""
+    key = hashlib.pbkdf2_hmac(
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        100000,  # iterations
+    )
+    return key.hex()
+
+
+def verify_password(password: str, salt: str, stored_hash: str) -> bool:
+    """Verify a password against a stored hash."""
+    computed_hash = hash_password(password, salt)
+    return hmac.compare_digest(computed_hash, stored_hash)
 
 router = APIRouter(prefix="/api/v1/admin/account", tags=["admin-account"])
 
@@ -36,16 +63,9 @@ class UpdateEmailRequest(BaseModel):
 
 class UpdatePasswordRequest(BaseModel):
     """Schema for updating admin password with validation."""
-    current_password: str
+    current_password: Optional[str] = ""
     new_password: str
     confirm_password: str
-
-    @field_validator("current_password")
-    @classmethod
-    def validate_current_password(cls, v: str) -> str:
-        if not v or len(v.strip()) < 1:
-            raise ValueError("Введите текущий пароль")
-        return v
 
     @field_validator("new_password")
     @classmethod
@@ -71,6 +91,25 @@ class UpdatePasswordRequest(BaseModel):
             raise ValueError("Пароли не совпадают")
 
 
+class UpdateLoginRequest(BaseModel):
+    """Schema for updating admin login with validation."""
+    login: str
+
+    @field_validator("login")
+    @classmethod
+    def validate_login(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("Логин не может быть пустым")
+        if len(v) < 3:
+            raise ValueError("Логин должен содержать минимум 3 символа")
+        if len(v) > 100:
+            raise ValueError("Логин слишком длинный (макс. 100 символов)")
+        if not re.match(r"^[a-zA-Z0-9_\-]+$", v):
+            raise ValueError("Логин может содержать только латинские буквы, цифры, дефис и подчёркивание")
+        return v
+
+
 class UpdateNameRequest(BaseModel):
     """Schema for updating admin display name."""
     name: str
@@ -92,6 +131,8 @@ class AccountResponse(BaseModel):
     email: str
     name: Optional[str] = None
     role: str
+    login: Optional[str] = None  # Login/username (displayed as Login)
+    has_password: bool = False  # Whether password is set
 
     class Config:
         from_attributes = True
@@ -175,7 +216,14 @@ async def get_admin_account(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
-    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role)
+    return AccountResponse(
+        id=user.id,
+        email=user.email,
+        name=user.name,
+        role=user.role,
+        login=user.login,  # Use login field from DB
+        has_password=bool(user.password_hash),
+    )
 
 
 @router.put("/email", response_model=AccountResponse)
@@ -196,7 +244,33 @@ async def update_admin_email(
     await db.refresh(user)
 
     logger.info(f"Admin email updated: {old_email} -> {data.email}")
-    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role)
+    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role, login=user.login, has_password=bool(user.password_hash))
+
+
+@router.put("/login", response_model=AccountResponse)
+async def update_admin_login(
+    data: UpdateLoginRequest,
+    current_user: UserResponse = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update admin login username."""
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
+
+    # Check if login is already taken by another user
+    existing = await db.execute(select(User).where(User.login == data.login).where(User.id != current_user.id))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Этот логин уже занят")
+
+    old_login = user.login
+    user.login = data.login
+    await db.commit()
+    await db.refresh(user)
+
+    logger.info(f"Admin login updated: {old_login} -> {data.login}")
+    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role, login=user.login, has_password=bool(user.password_hash))
 
 
 @router.put("/name", response_model=AccountResponse)
@@ -216,32 +290,52 @@ async def update_admin_name(
     await db.refresh(user)
 
     logger.info(f"Admin name updated to: {data.name}")
-    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role)
+    return AccountResponse(id=user.id, email=user.email, name=user.name, role=user.role, login=user.login, has_password=bool(user.password_hash))
 
 
 @router.put("/password")
 async def update_admin_password(
     data: UpdatePasswordRequest,
     current_user: UserResponse = Depends(get_admin_user),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Update admin password.
+    """Update admin password with proper hashing."""
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Пользователь не найден")
 
-    Note: Authentication is managed through the OIDC provider.
-    This endpoint validates the request format but the actual password
-    change must be performed through the identity provider's interface.
-    """
-    # Validate that new password differs from current
-    if data.current_password == data.new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Новый пароль должен отличаться от текущего",
-        )
+    # If user already has a password, verify the current password
+    if user.password_hash:
+        if not data.current_password or not data.current_password.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Введите текущий пароль",
+            )
+        stored = user.password_hash
+        if ":" in stored:
+            salt, stored_hash = stored.split(":", 1)
+            if not verify_password(data.current_password, salt, stored_hash):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Неверный текущий пароль",
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Требуется повторная аутентификация. Обратитесь к администратору.",
+            )
 
-    return {
-        "message": "Аутентификация управляется через внешний провайдер (OIDC). "
-                   "Для смены пароля используйте интерфейс провайдера авторизации.",
-        "provider_managed": True,
-    }
+    # Generate new salt and hash the new password
+    salt = generate_salt()
+    new_hash = hash_password(data.new_password, salt)
+    user.password_hash = f"{salt}:{new_hash}"
+
+    await db.commit()
+    await db.refresh(user)
+
+    logger.info(f"Admin password updated for user: {user.email}")
+    return {"message": "Пароль успешно обновлён", "success": True}
 
 
 # ---------- Feedback Email Endpoints ----------

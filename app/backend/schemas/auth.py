@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UserResponse(BaseModel):
@@ -25,3 +25,19 @@ class TokenExchangeResponse(BaseModel):
     """Response body for issued application token."""
 
     token: str
+
+
+class AdminLoginRequest(BaseModel):
+    """Request body for admin username/password login."""
+
+    username: str = Field(..., min_length=1, max_length=255)
+    password: str = Field(..., min_length=1, max_length=255)
+
+
+class AdminLoginResponse(BaseModel):
+    """Response body for admin login with application token."""
+
+    token: str
+    token_type: str = "Bearer"
+    expires_in: int
+    user: UserResponse

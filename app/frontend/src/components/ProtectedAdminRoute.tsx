@@ -27,9 +27,9 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
     );
   }
 
-  // If the user is not logged in, redirect to the login page
+  // If the user is not logged in, redirect to the admin login page
   if (!user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   // If the user is not an admin, show an insufficient-permissions page
@@ -67,7 +67,7 @@ const ProtectedAdminRoute: React.FC<ProtectedAdminRouteProps> = ({
             </div>
 
             <div className="space-y-3">
-              <Button onClick={login} className="w-full" variant="outline">
+              <Button onClick={() => window.location.href = '/admin/login'} className="w-full" variant="outline">
                 <LogIn className="h-4 w-4 mr-2" />
                 Switch account
               </Button>

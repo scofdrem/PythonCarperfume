@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime, timezone
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -21,6 +22,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
 from models.auth import User
 from schemas.auth import (
+    AdminLoginRequest,
+    AdminLoginResponse,
     PlatformTokenExchangeRequest,
     TokenExchangeResponse,
     UserResponse,
@@ -95,6 +98,39 @@ async def login(request: Request, db: AsyncSession = Depends(get_db)):
         url=auth_url,
         status_code=status.HTTP_302_FOUND,
         headers={"X-Request-ID": state},
+    )
+
+
+@router.post("/login", response_model=AdminLoginResponse)
+async def admin_login(payload: AdminLoginRequest, db: AsyncSession = Depends(get_db)):
+    """Admin login with username and password."""
+    logger.info("[admin_login] Login attempt for username: %s", payload.username)
+
+    auth_service = AuthService(db)
+    user = await auth_service.authenticate_admin(payload.username, payload.password)
+
+    if not user:
+        logger.warning("[admin_login] Authentication failed for username: %s", payload.username)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    app_token, expires_at, _ = await auth_service.issue_app_token(user=user)
+
+    logger.info("[admin_login] Login successful for username: %s", payload.username)
+
+    return AdminLoginResponse(
+        token=app_token,
+        expires_in=int((expires_at - datetime.now(timezone.utc)).total_seconds()),
+        user=UserResponse(
+            id=user.id,
+            email=user.email,
+            name=user.name,
+            role=user.role,
+            last_login=user.last_login,
+        ),
     )
 
 
