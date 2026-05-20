@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X, Send, CheckCircle } from "lucide-react";
-import { createClient } from "@metagptx/web-sdk";
+import { client } from '@/lib/api';
 import type { Product } from "@/data/products";
 
 interface InquiryModalProps {
@@ -9,8 +9,6 @@ interface InquiryModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const client = createClient();
 
 type ContactMethod = "email" | "telegram";
 

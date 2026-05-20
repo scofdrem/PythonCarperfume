@@ -1,8 +1,6 @@
-import { createClient } from "@metagptx/web-sdk";
 import type { Product, Category, Brand } from "@/data/products";
 import type { SiteContent } from "@/data/siteContent";
-
-const client = createClient();
+import { client } from "@/lib/api";
 
 // ─── Mapping helpers ───
 

@@ -1,4 +1,4 @@
-import { createClient } from "@metagptx/web-sdk";
+import { client } from "@/lib/api";
 
 const BUCKET_NAME = "site-images";
 
@@ -10,7 +10,6 @@ export async function uploadImage(
   file: File,
   folder: string = "banners"
 ): Promise<{ objectKey: string; url: string }> {
-  const client = createClient();
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const objectKey = `${folder}/${timestamp}-${safeName}`;
@@ -54,7 +53,6 @@ export async function resolveImageUrl(
     const objectKey = keyParts.join("/");
 
     try {
-      const client = createClient();
       const result = await client.storage.getDownloadUrl({
         bucket_name: bucket,
         object_key: objectKey,
@@ -86,7 +84,6 @@ export async function uploadPdf(
   file: File,
   folder: string = "documents"
 ): Promise<{ objectKey: string; url: string }> {
-  const client = createClient();
   const timestamp = Date.now();
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
   const objectKey = `${folder}/${timestamp}-${safeName}`;
@@ -126,7 +123,6 @@ export async function resolvePdfUrl(
     const objectKey = keyParts.join("/");
 
     try {
-      const client = createClient();
       const result = await client.storage.getDownloadUrl({
         bucket_name: bucket,
         object_key: objectKey,

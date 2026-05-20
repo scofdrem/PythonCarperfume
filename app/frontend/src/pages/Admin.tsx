@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Upload, X, Save, Check, AlertCircle } from "lucide-react";
-import { createClient } from "@metagptx/web-sdk";
+import { client } from '@/lib/api';
 import { type Product, type Category } from "@/data/products";
 import { rebuildBrandsFromProducts } from "@/data/brandsStore";
 import {
@@ -407,7 +407,6 @@ export default function Admin() {
   const [saved, setSaved] = useState(false);
 
   // Account management state
-  const client = createClient();
   const [accountEmail, setAccountEmail] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountRole, setAccountRole] = useState("");
