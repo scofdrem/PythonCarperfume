@@ -80,16 +80,6 @@ export const defaultSiteContent: SiteContent = {
         link: "/catalogue",
         image: "https://images.unsplash.com/photo-1587017539504-67cfbddac569?w=600&q=80",
       },
-      {
-        title: "Доставка по Беларуси",
-        link: "/catalogue",
-        image: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&q=80",
-      },
-      {
-        title: "Более 950 ароматов",
-        link: "/catalogue",
-        image: "https://images.unsplash.com/photo-1594035910387-fbd1a485b12e?w=600&q=80",
-      },
     ],
     title: "1000 Ароматов",
     description1:

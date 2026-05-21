@@ -128,12 +128,12 @@ export function About() {
 
         {/* Banners */}
         {banners.length > 0 && (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+        <div className="grid sm:grid-cols-2 gap-6 mb-16">
           {banners.map((banner, i) => (
             <a
               key={i}
               href={banner.link}
-              className="group relative aspect-[4/3] overflow-hidden bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/30 transition-all duration-300"
+              className="group relative aspect-[8/3] overflow-hidden bg-[#1A1A1A] border border-white/5 hover:border-[#C69B56]/30 transition-all duration-300"
             >
               <StorageImage
                 src={banner.image}
