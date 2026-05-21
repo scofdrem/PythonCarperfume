@@ -7,8 +7,6 @@ import BlogRoutes from './blog-routes';
 import Index from './pages/Index';
 import Catalogue from './pages/Catalogue';
 import Admin from './pages/Admin';
-import LandingPage from './pages/LandingPage';
-import LandingProductAdmin from './components/landing/LandingProductAdmin';
 import AuthCallback from './pages/AuthCallback';
 import AuthError from './pages/AuthError';
 import { initSiteContentFromBackend } from '@/data/siteContent';
@@ -30,8 +28,6 @@ const AppRoutes = () => {
     <Route path="/" element={<Index />} />
     <Route path="/catalogue" element={<Catalogue />} />
     <Route path="/admin" element={<Admin />} />
-    <Route path="/admin/landing-catalogue/:pageId" element={<LandingProductAdmin />} />
-    <Route path="/landing/:slug" element={<LandingPage />} />
     {/* <Route path="/blog/*" element={<BlogRoutes />} /> */}
     <Route path="/auth/callback" element={<AuthCallback />} />
     <Route path="/auth/error" element={<AuthError />} />
