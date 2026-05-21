@@ -1,0 +1,10 @@
+{
+  "folders": [
+    {
+      "path": "app"
+    }
+  ],
+  "settings": {
+    "git.autofetch": true
+  }
+}
