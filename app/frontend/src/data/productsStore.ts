@@ -6,8 +6,10 @@ import { useState, useEffect } from "react";
 import {
   products as staticProducts,
   categories as staticCategories,
+  brands as staticBrands,
   type Product,
   type Category,
+  type Brand,
 } from "@/data/products";
 import {
   fetchProducts,

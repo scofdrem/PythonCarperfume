@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal, X, ChevronDown } from "lucide-react";
-import { ageRanges } from "@/data/products";
 import { useProducts, useCategories } from "@/data/productsStore";
 import { useDynamicBrands } from "@/data/brandsStore";
 import ProductCard from "@/components/ProductCard";
@@ -23,7 +22,6 @@ export default function Catalogue() {
 
   const selectedCategory = searchParams.get("category") || "";
   const selectedBrand = searchParams.get("brand") || "";
-  const selectedAgeRange = searchParams.get("age") || "";
 
   const setFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
@@ -62,10 +60,6 @@ export default function Catalogue() {
       );
     }
 
-    if (selectedAgeRange) {
-      result = result.filter((p) => p.ageRange === selectedAgeRange);
-    }
-
     switch (sort) {
       case "name":
         result.sort((a, b) => a.name.localeCompare(b.name));
@@ -73,9 +67,9 @@ export default function Catalogue() {
     }
 
     return result;
-  }, [search, selectedCategory, selectedBrand, selectedAgeRange, sort]);
+  }, [search, selectedCategory, selectedBrand, sort]);
 
-  const hasFilters = search || selectedCategory || selectedBrand || selectedAgeRange;
+  const hasFilters = search || selectedCategory || selectedBrand;
 
   return (
     <div className="min-h-screen bg-black">
@@ -219,37 +213,6 @@ export default function Catalogue() {
                   </div>
                 </div>
 
-                {/* Age range filter */}
-                <div>
-                  <h3 className="text-[#C69B56] text-xs tracking-[0.1em] uppercase mb-3 font-medium">
-                    Возраст
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setFilter("age", "")}
-                      className={`px-3 py-1.5 text-[11px] border transition-colors ${
-                        !selectedAgeRange
-                          ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
-                          : "border-white/10 text-white/40 hover:border-white/30"
-                      }`}
-                    >
-                      Все
-                    </button>
-                    {ageRanges.map((ar) => (
-                      <button
-                        key={ar.value}
-                        onClick={() => setFilter("age", ar.value)}
-                        className={`px-3 py-1.5 text-[11px] border transition-colors ${
-                          selectedAgeRange === ar.value
-                            ? "border-[#C69B56] text-[#C69B56] bg-[#C69B56]/10"
-                            : "border-white/10 text-white/40 hover:border-white/30"
-                        }`}
-                      >
-                        {ar.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {hasFilters && (
@@ -283,14 +246,6 @@ export default function Catalogue() {
                   </button>
                 </span>
               )}
-              {selectedAgeRange && (
-                <span className="flex items-center gap-1 bg-[#C69B56]/10 border border-[#C69B56]/30 text-[#C69B56] text-[11px] px-2 py-1">
-                  {ageRanges.find((a) => a.value === selectedAgeRange)?.label || selectedAgeRange}
-                  <button onClick={() => setFilter("age", "")}>
-                    <X size={10} />
-                  </button>
-                </span>
-              )}
               <button
                 onClick={clearFilters}
                 className="text-white/30 text-[11px] hover:text-white/50 transition-colors"
@@ -309,7 +264,7 @@ export default function Catalogue() {
           {filtered.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
               {filtered.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard product={product} />
               ))}
             </div>
           ) : (

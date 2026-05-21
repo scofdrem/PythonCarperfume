@@ -367,14 +367,10 @@ export default function Admin() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formBrand, setFormBrand] = useState("");
-  const [formCategory, setFormCategory] = useState("niche");
-  const [formGender, setFormGender] = useState<"women" | "men" | "unisex">(
-    "unisex"
-  );
-  const [formAgeRange, setFormAgeRange] = useState<
-    "18-25" | "25-35" | "35-45" | "45+"
-  >("25-35");
-  const [formVolumes, setFormVolumes] = useState("2, 5, 10, 20, 30");
+  const [formCategory, setFormCategory] = useState("Hanging Air Freshener");
+  const [formPrice, setFormPrice] = useState<number>(0);
+  const [formRefillable, setFormRefillable] = useState(false);
+  const [formVolumes, setFormVolumes] = useState("0, 10, 20, 30");
   const [formImage, setFormImage] = useState("");
   const [formFeatured, setFormFeatured] = useState(false);
   const [formNew, setFormNew] = useState(false);
@@ -635,10 +631,10 @@ export default function Admin() {
   const resetForm = () => {
     setFormName("");
     setFormBrand("");
-    setFormCategory("niche");
-    setFormGender("unisex");
-    setFormAgeRange("25-35");
-    setFormVolumes("2, 5, 10, 20, 30");
+    setFormCategory("Hanging Air Freshener");
+    setFormPrice(0);
+    setFormRefillable(false);
+    setFormVolumes("0, 10, 20, 30");
     setFormImage("");
     setFormFeatured(false);
     setFormNew(false);
@@ -653,8 +649,8 @@ export default function Admin() {
     setFormName(p.name);
     setFormBrand(p.brand);
     setFormCategory(p.category);
-    setFormGender(p.gender);
-    setFormAgeRange(p.ageRange);
+    setFormPrice(p.price || 0);
+    setFormRefillable(p.refillable || false);
     setFormVolumes(p.volumes.join(", "));
     setFormImage(p.image);
     setFormDescription(p.description || "");
@@ -675,7 +671,7 @@ export default function Admin() {
     const volumes = formVolumes
       .split(",")
       .map((v) => Number(v.trim()))
-      .filter((v) => v > 0);
+      .filter((v) => !isNaN(v));
 
     if (editingProduct) {
       // Only include image in updates if user explicitly set a value (including empty to clear)
@@ -685,12 +681,12 @@ export default function Admin() {
         name: formName,
         brand: formBrand,
         category: formCategory,
-        gender: formGender,
-        ageRange: formAgeRange,
+        price: formPrice,
         volumes,
         image: imageValue,
-        description: formDescription,
-        instagramUrl: formInstagramUrl,
+        description: formDescription || undefined,
+        instagramUrl: formInstagramUrl || undefined,
+        refillable: formRefillable || undefined,
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
       });
@@ -704,14 +700,14 @@ export default function Admin() {
         name: formName,
         brand: formBrand,
         category: formCategory,
-        gender: formGender,
-        ageRange: formAgeRange,
+        price: formPrice,
         volumes,
         image:
           formImage ||
           "https://images.unsplash.com/photo-1541643600914-78b084683601?w=400&q=80",
-        description: formDescription,
-        instagramUrl: formInstagramUrl,
+        description: formDescription || undefined,
+        instagramUrl: formInstagramUrl || undefined,
+        refillable: formRefillable || undefined,
         isFeatured: formFeatured || undefined,
         isNew: formNew || undefined,
       });
@@ -1173,54 +1169,36 @@ export default function Admin() {
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
                     >
-                      <option value="niche">Нишевая</option>
-                      <option value="luxury">Люксовая</option>
-                      <option value="women">Женская</option>
-                      <option value="men">Мужская</option>
-                      <option value="unisex">Унисекс</option>
-                      <option value="decants">Отливанты</option>
+                      <option value="Hanging Air Freshener">Hanging Air Freshener</option>
+                      <option value="Vent Clip Freshener">Vent Clip Freshener</option>
+                      <option value="Gel Freshener">Gel Freshener</option>
+                      <option value="Diffusor">Diffusor</option>
+                      <option value="Solid Freshener">Solid Freshener</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-white/40 text-xs mb-1">
-                      Пол
+                      Цена *
                     </label>
-                    <select
-                      value={formGender}
-                      onChange={(e) =>
-                        setFormGender(
-                          e.target.value as "women" | "men" | "unisex"
-                        )
-                      }
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formPrice}
+                      onChange={(e) => setFormPrice(parseFloat(e.target.value) || 0)}
                       className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
-                    >
-                      <option value="women">Женский</option>
-                      <option value="men">Мужской</option>
-                      <option value="unisex">Унисекс</option>
-                    </select>
+                    />
                   </div>
                   <div>
-                    <label className="block text-white/40 text-xs mb-1">
-                      Возраст
+                    <label className="flex items-center gap-3 cursor-pointer bg-black border border-white/5 p-3 hover:border-white/20 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={formRefillable}
+                        onChange={(e) => setFormRefillable(e.target.checked)}
+                        className="accent-[#C69B56] w-4 h-4"
+                      />
+                      <span className="text-white/70 text-sm">Refillable</span>
                     </label>
-                    <select
-                      value={formAgeRange}
-                      onChange={(e) =>
-                        setFormAgeRange(
-                          e.target.value as
-                            | "18-25"
-                            | "25-35"
-                            | "35-45"
-                            | "45+"
-                        )
-                      }
-                      className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
-                    >
-                      <option value="18-25">18–25</option>
-                      <option value="25-35">25–35</option>
-                      <option value="35-45">35–45</option>
-                      <option value="45+">45+</option>
-                    </select>
                   </div>
                   <Field
                     label="Объёмы (через запятую)"

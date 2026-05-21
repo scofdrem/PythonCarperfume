@@ -22,13 +22,13 @@ class ProductsData(BaseModel):
     """Entity data schema (for create/update)"""
     name: str
     brand: str
+    price: float
     category: str = None
-    gender: str = None
-    age_range: str = None
     volumes: str = None
     image: str = None
     description: str = None
     instagram_url: str = None
+    refillable: bool = None
     is_new: bool = None
     is_featured: bool = None
 
@@ -37,13 +37,13 @@ class ProductsUpdateData(BaseModel):
     """Update entity data (partial updates allowed)"""
     name: Optional[str] = None
     brand: Optional[str] = None
+    price: Optional[float] = None
     category: Optional[str] = None
-    gender: Optional[str] = None
-    age_range: Optional[str] = None
     volumes: Optional[str] = None
     image: Optional[str] = None
     description: Optional[str] = None
     instagram_url: Optional[str] = None
+    refillable: Optional[bool] = None
     is_new: Optional[bool] = None
     is_featured: Optional[bool] = None
 
@@ -53,13 +53,13 @@ class ProductsResponse(BaseModel):
     id: int
     name: str
     brand: str
+    price: float
     category: Optional[str] = None
-    gender: Optional[str] = None
-    age_range: Optional[str] = None
     volumes: Optional[str] = None
     image: Optional[str] = None
     description: Optional[str] = None
     instagram_url: Optional[str] = None
+    refillable: Optional[bool] = None
     is_new: Optional[bool] = None
     is_featured: Optional[bool] = None
     created_at: Optional[datetime] = None

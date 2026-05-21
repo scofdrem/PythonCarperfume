@@ -1,6 +1,6 @@
 from core.database import Base
 from datetime import datetime
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String
 
 
 class Products(Base):
@@ -11,12 +11,12 @@ class Products(Base):
     name = Column(String, nullable=False)
     brand = Column(String, nullable=False)
     category = Column(String, nullable=True)
-    gender = Column(String, nullable=True)
-    age_range = Column(String, nullable=True)
+    price = Column(Float, nullable=False)
     volumes = Column(String, nullable=True)
     image = Column(String, nullable=True)
     description = Column(String, nullable=True)
     instagram_url = Column(String, nullable=True)
+    refillable = Column(Boolean, nullable=True, default=False, server_default='false')
     is_new = Column(Boolean, nullable=True, default=False, server_default='false')
     is_featured = Column(Boolean, nullable=True, default=False, server_default='false')
     created_at = Column(DateTime(timezone=True), default=datetime.now)

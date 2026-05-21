@@ -10,17 +10,17 @@ function mapProductFromBackend(item: Record<string, any>): Product {
     name: item.name || "",
     brand: item.brand || "",
     category: item.category || "",
-    gender: item.gender || "unisex",
-    ageRange: item.age_range || "25-35",
+    price: Number(item.price) || 0,
     volumes: item.volumes
       ? String(item.volumes)
           .split(",")
           .map((v: string) => Number(v.trim()))
-          .filter((v: number) => v > 0)
+          .filter((v: number) => !isNaN(v))
       : [],
     image: item.image || "",
-    description: item.description || "",
-    instagramUrl: item.instagram_url || "",
+    description: item.description || undefined,
+    instagramUrl: item.instagram_url || undefined,
+    refillable: item.refillable || undefined,
     isNew: item.is_new || undefined,
     isFeatured: item.is_featured || undefined,
   };
@@ -30,13 +30,13 @@ function mapProductToBackend(product: Partial<Product>): Record<string, any> {
   const data: Record<string, any> = {};
   if (product.name !== undefined) data.name = product.name;
   if (product.brand !== undefined) data.brand = product.brand;
+  if (product.price !== undefined) data.price = product.price;
   if (product.category !== undefined) data.category = product.category;
-  if (product.gender !== undefined) data.gender = product.gender;
-  if (product.ageRange !== undefined) data.age_range = product.ageRange;
   if (product.volumes !== undefined) data.volumes = product.volumes.join(",");
   if (product.image !== undefined) data.image = product.image;
   if (product.description !== undefined) data.description = product.description;
   if (product.instagramUrl !== undefined) data.instagram_url = product.instagramUrl;
+  if (product.refillable !== undefined) data.refillable = product.refillable;
   if (product.isNew !== undefined) data.is_new = product.isNew;
   if (product.isFeatured !== undefined) data.is_featured = product.isFeatured;
   return data;
