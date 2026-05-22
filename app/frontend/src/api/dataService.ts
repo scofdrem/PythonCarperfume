@@ -213,7 +213,7 @@ function fieldToKey(field: keyof SiteContent): string {
   return field as string;
 }
 
-export async function fetchSiteContent(): Promise<SiteContent | null> {
+export async function fetchSiteContent(): Promise<Partial<SiteContent> | null> {
   try {
     const response = await client.entities.site_content.query({ limit: 100 });
     const items: Record<string, any>[] = response.data.items || [];
@@ -232,11 +232,8 @@ export async function fetchSiteContent(): Promise<SiteContent | null> {
       }
     }
 
-    // Validate all sections present
-    const hasAll = (["hero", "sectionHeadings", "about", "footer", "header"] as const).every(
-      (k) => k in result
-    );
-    return hasAll ? (result as SiteContent) : null;
+    // Return whatever sections were fetched — missing ones will be merged with defaults in siteContent.ts
+    return Object.keys(result).length > 0 ? result : null;
   } catch (e) {
     console.error("Failed to fetch site content:", e);
     return null;

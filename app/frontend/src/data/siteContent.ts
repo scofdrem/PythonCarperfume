@@ -1,27 +1,16 @@
-// Centralized editable site content — Admin panel modifies these values
-// Components read from here to reflect admin changes
-
-export interface Banner {
-  title: string;
-  link: string;
-  image: string;
-}
-
-export interface HeaderSettings {
-  favicon: string;
-  tabTitle: string;
-  brandLine1: string;
-  brandLine2: string;
-  navLinks: {
-    catalogue: boolean;
-    brands: boolean;
-    about: boolean;
-    admin: boolean;
-  };
-}
-
 export interface SiteContent {
-  header: HeaderSettings;
+  header: {
+    favicon: string;
+    tabTitle: string;
+    brandLine1: string;
+    brandLine2: string;
+    navLinks: {
+      catalogue: boolean;
+      brands: boolean;
+      about: boolean;
+      admin: boolean;
+    };
+  };
   hero: {
     backgroundImage: string;
     subtitle: string;
@@ -38,7 +27,12 @@ export interface SiteContent {
     about: string;
   };
   about: {
-    banners: Banner[];
+    logo: string;
+    banners: Array<{
+      title: string;
+      image: string;
+      link: string;
+    }>;
     title: string;
     description1: string;
     description2: string;
@@ -47,7 +41,6 @@ export interface SiteContent {
     email: string;
     workingHours: string;
     mapUrl: string;
-    logo?: string;
   };
   footer: {
     brandDescription: string;
@@ -67,9 +60,9 @@ export interface SiteContent {
 export const defaultSiteContent: SiteContent = {
   header: {
     favicon: "",
-    tabTitle: "Foetida Magna — Изысканный Автопарфюм",
-    brandLine1: "FOETIDA MAGNA",
-    brandLine2: "ИЗЫСКАННЫЙ АВТОПАРФЮМ",
+    tabTitle: "SCENTED CO. — Автомобильный парфюм",
+    brandLine1: "SCENTED CO.",
+    brandLine2: "АВТОМОБИЛЬНЫЙ ПАРФЮМ",
     navLinks: {
       catalogue: true,
       brands: true,
@@ -78,13 +71,11 @@ export const defaultSiteContent: SiteContent = {
     },
   },
   hero: {
-    backgroundImage:
-      "https://images.unsplash.com/photo-1541643600914-78b084683601?w=1920&q=80",
-    subtitle: "ИЗЫСКАННЫЙ АВТОПАРФЮМ",
-    headingLine1: "Мир элитных",
-    headingLine2: "ароматов",
-    description:
-      "Откройте для себя коллекцию нишевых и люксовых парфюмов в формате отливантов. Попробуйте популярные ароматы от 2 мл.",
+    backgroundImage: "hero-bg.jpg",
+    subtitle: "SCENTED CO.",
+    headingLine1: "Автомобильный парфюм",
+    headingLine2: "Премиум класса",
+    description: "Премиум ароматы для вашего автомобиля",
     buttonText: "Смотреть каталог",
     buttonLink: "/catalogue",
   },
@@ -95,40 +86,29 @@ export const defaultSiteContent: SiteContent = {
     about: "О нас",
   },
   about: {
-    banners: [
-      {
-        title: "Оригинальная продукция",
-        link: "/catalogue",
-        image: "https://images.unsplash.com/photo-1541643600914-78b084683601?w=600&q=80",
-      },
-      {
-        title: "Безопасная упаковка",
-        link: "/catalogue",
-        image: "https://images.unsplash.com/photo-1587017539504-67cfbddac569?w=600&q=80",
-      },
-    ],
-    title: "Foetida Magna",
-    description1:
-      "Мы — магазин парфюмерии на распив, который предлагает вам возможность познакомиться с элитными ароматами без необходимости покупать полный флакон. Каждый отливант разливается из оригинального флакона в стерильные условия с соблюдением всех стандартов качества.",
-    description2:
-      "В нашем каталоге более 950 ароматов от ведущих мировых брендов: нишевая, люксовая и селективная парфюмерия. Мы гарантируем подлинность каждого флакона и бережную доставку по всей Беларуси.",
-    location: "Минск, Беларусь",
-    phone: "+375 (29) 123-45-67",
-    email: "info@1000aromatov.by",
-    workingHours: "Пн–Пт: 10:00–20:00, Сб: 11:00–18:00",
-    mapUrl:
-      "https://www.openstreetmap.org/export/embed.html?bbox=27.4%2C53.85%2C27.7%2C53.97&layer=mapnik",
     logo: "/logo.jpg",
+    banners: [
+      { title: "Премиум качество", image: "banner1.jpg", link: "/catalogue" },
+      { title: "Долговечность", image: "banner2.jpg", link: "/catalogue" },
+      { title: "Уникальный аромат", image: "banner3.jpg", link: "/catalogue" },
+    ],
+    title: "О нас",
+    description1: "Мы предлагаем автомобильные ароматизаторы премиум-класса.",
+    description2: "Наши ароматы созданы профессиональными парфюмерами и отличаются высокой стойкостью.",
+    location: "г. Минск",
+    phone: "+375 (29) 123-45-67",
+    email: "info@scented.co",
+    workingHours: "Пн-Пт: 9:00-18:00",
+    mapUrl: "",
   },
   footer: {
-    brandDescription:
-      "Интернет-магазин отливантов элитной парфюмерии. Оригинальные ароматы от 2 мл с доставкой по всей Беларуси.",
-    telegram: "@1000aromatov",
+    brandDescription: "Автомобильные ароматизаторы премиум-класса",
+    telegram: "@scentedco",
     viber: "+375 (29) 123-45-67",
-    instagram: "@1000aromatov",
-    email: "info@1000aromatov.by",
+    instagram: "@scentedco",
+    email: "info@scented.co",
     phone: "+375 (29) 123-45-67",
-    copyright: "© 2026 1000 АРОМАТОВ. Все права защищены.",
+    copyright: "© 2024 SCENTED CO. Все права защищены.",
     privacyPolicyText: "Политика конфиденциальности",
     offerText: "Оферта",
     privacyPolicyPdf: "",
@@ -136,7 +116,6 @@ export const defaultSiteContent: SiteContent = {
   },
 };
 
-// Reactive store — components subscribe via useSiteContent hook
 import { useState, useEffect } from "react";
 import { fetchSiteContent, saveSiteContent as saveToBackend } from "@/api/dataService";
 
@@ -153,40 +132,64 @@ export function setSiteContent(content: SiteContent) {
   listeners.forEach((fn) => fn());
 }
 
-/** Migrate old about.cards to about.banners if needed */
-function migrateContent(data: Record<string, any>): SiteContent {
-  // Ensure header section exists with defaults
-  if (!data.header) {
-    data.header = defaultSiteContent.header;
-  } else {
-    // Merge missing fields from defaults
-    data.header = { ...defaultSiteContent.header, ...data.header };
-    if (!data.header.navLinks) {
-      data.header.navLinks = defaultSiteContent.header.navLinks;
+/**
+ * Deep-merge a partial section with its defaults.
+ * Handles nested objects (like about.banners) and arrays.
+ */
+function deepMergeSection<T extends Record<string, any>>(section: Partial<T> | undefined, defaults: T): T {
+  if (!section) return defaults;
+  const result: Record<string, any> = { ...defaults };
+  for (const key of Object.keys(section)) {
+    const incoming = (section as Record<string, any>)[key];
+    const def = (defaults as Record<string, any>)[key];
+    if (incoming === undefined || incoming === null) continue;
+    // If both are plain objects, recurse
+    if (
+      typeof incoming === "object" &&
+      !Array.isArray(incoming) &&
+      incoming.constructor === Object &&
+      def !== undefined &&
+      typeof def === "object" &&
+      !Array.isArray(def) &&
+      def.constructor === Object
+    ) {
+      result[key] = deepMergeSection(incoming, def);
     } else {
-      data.header.navLinks = { ...defaultSiteContent.header.navLinks, ...data.header.navLinks };
+      result[key] = incoming;
     }
   }
-  const about = data.about || {};
-  // If banners missing but cards exist, convert cards → banners
-  if (!about.banners && about.cards) {
-    about.banners = about.cards.map((card: any) => ({
+  return result as T;
+}
+
+/** Migrate old about.cards to about.banners if needed */
+function migrateContent(data: Partial<SiteContent>): SiteContent {
+  // Deep-merge each section with its defaults
+  const header = deepMergeSection(data.header, defaultSiteContent.header);
+  const hero = deepMergeSection(data.hero, defaultSiteContent.hero);
+  const sectionHeadings = deepMergeSection(data.sectionHeadings, defaultSiteContent.sectionHeadings);
+
+  // about needs special handling: convert old cards → banners + deep merge
+  const aboutDefaults = { ...defaultSiteContent.about };
+  const incomingAbout: Record<string, any> = data.about || {};
+  if (incomingAbout.cards && !incomingAbout.banners) {
+    incomingAbout.banners = incomingAbout.cards.map((card: any) => ({
       title: card.title || "",
       link: "/catalogue",
       image: "",
     }));
-    delete about.cards;
+    delete (incomingAbout as any).cards;
   }
-  if (!about.banners) {
-    about.banners = defaultSiteContent.about.banners;
-  }
-  // Ensure logo field exists
-  if (!about.logo) {
-    about.logo = defaultSiteContent.about.logo;
-  }
-  data.about = about;
-  // Ensure all top-level keys exist
-  return { ...defaultSiteContent, ...data };
+  const about = deepMergeSection(incomingAbout, aboutDefaults);
+
+  const footer = deepMergeSection(data.footer, defaultSiteContent.footer);
+
+  return {
+    header,
+    hero,
+    sectionHeadings,
+    about,
+    footer,
+  };
 }
 
 /** Load site content from backend into the reactive store (call once on app init) */
@@ -204,24 +207,29 @@ export async function initSiteContentFromBackend(): Promise<void> {
   backendLoaded = true;
 }
 
-/** Save site content to both the reactive store and the backend database */
-export async function persistSiteContent(content: SiteContent): Promise<boolean> {
-  setSiteContent(content);
-  try {
-    return await saveToBackend(content);
-  } catch {
-    return false;
-  }
-}
-
+/**
+ * React hook to subscribe to site content changes.
+ * Returns the current site content and a setter function.
+ */
 export function useSiteContent(): SiteContent {
-  const [content, setContent] = useState<SiteContent>(() => JSON.parse(JSON.stringify(currentContent)));
+  const [content, setContent] = useState<SiteContent>(currentContent);
+
   useEffect(() => {
-    const handler = () => setContent(JSON.parse(JSON.stringify(currentContent)));
-    listeners.add(handler);
+    const handleChange = () => setContent(currentContent);
+    listeners.add(handleChange);
     return () => {
-      listeners.delete(handler);
+      listeners.delete(handleChange);
     };
   }, []);
+
   return content;
+}
+
+/** Persist site content to backend and update local store */
+export async function persistSiteContent(content: SiteContent): Promise<boolean> {
+  const success = await saveToBackend(content);
+  if (success) {
+    setSiteContent(content);
+  }
+  return success;
 }
