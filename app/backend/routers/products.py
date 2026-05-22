@@ -1,15 +1,22 @@
 import json
 import logging
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from datetime import datetime, date
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
 from services.products import ProductsService
+from services.product_import import (
+    PRODUCT_FIELD_REGISTRY,
+    parse_csv_content,
+    parse_xlsx_content,
+    process_import_rows,
+    ProductImportService,
+)
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -356,3 +363,110 @@ async def delete_products(
     except Exception as e:
         logger.error(f"Error deleting products {id}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+@router.get("/template")
+async def download_template() -> Any:
+    """
+    Download an Excel template for bulk product import.
+    Dynamically generated from the Product model field registry.
+    """
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill, Alignment
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        raise HTTPException(
+            status_code=500,
+            detail="openpyxl is not installed. Run: pip install openpyxl"
+        )
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Products"
+    
+    # Header row
+    headers = list(PRODUCT_FIELD_REGISTRY.keys())
+    for col_idx, field_name in enumerate(headers, start=1):
+        meta = PRODUCT_FIELD_REGISTRY[field_name]
+        cell = ws.cell(row=1, column=col_idx, value=field_name)
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        # Highlight required fields with red
+        if meta["required"]:
+            cell.fill = PatternFill(start_color="C0504D", end_color="C0504D", fill_type="solid")
+    
+    # Example row
+    for col_idx, field_name in enumerate(headers, start=1):
+        meta = PRODUCT_FIELD_REGISTRY[field_name]
+        ws.cell(row=2, column=col_idx, value=meta["example"])
+    
+    # Auto-size columns
+    for col_idx in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = max(18, len(headers[col_idx - 1]) + 4)
+    
+    # Add instructions
+    ws.cell(row=4, column=1, value="Instructions:")
+    ws.cell(row=4, column=1).font = Font(bold=True)
+    ws.cell(row=5, column=1, value="  Red headers = required fields (name, brand, price)")
+    ws.cell(row=6, column=1, value="  Volumes: comma-separated numbers, e.g. '0, 10, 20, 30'")
+    ws.cell(row=7, column=1, value="  Booleans: TRUE/FALSE, Yes/No, 1/0")
+    ws.cell(row=8, column=1, value="  Save as .xlsx or .csv and upload via Admin panel")
+    
+    # Write to buffer
+    from io import BytesIO
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    from starlette.responses import StreamingResponse
+    return StreamingResponse(
+        buffer,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="product_import_template.xlsx"'}
+    )
+
+
+@router.post("/import")
+async def import_products(
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """
+    Import products from an Excel (.xlsx, .xls) or CSV file.
+    Returns count of imported products and any validation errors.
+    """
+    filename = (file.filename or "").lower()
+    content = await file.read()
+    
+    try:
+        if filename.endswith((".xlsx", ".xls")):
+            headers, rows = parse_xlsx_content(content)
+        elif filename.endswith(".csv"):
+            headers, rows = parse_csv_content(content.decode("utf-8"))
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Unsupported file format. Use .xlsx, .xls, or .csv"
+            )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
+    
+    if not rows:
+        raise HTTPException(status_code=400, detail="File contains no data rows")
+    
+    # Validate structure
+    parsed_headers = [h.strip() for h in headers if h.strip()]
+    if not parsed_headers:
+        raise HTTPException(status_code=400, detail="No headers found in file")
+    
+    service = ProductImportService(db)
+    result = await service.import_products(parsed_headers, rows)
+    
+    return {
+        "imported_count": result["imported_count"],
+        "total_processed": result["total_processed"],
+        "errors": result["errors"],
+        "success": len(result["errors"]) == 0,
+    }

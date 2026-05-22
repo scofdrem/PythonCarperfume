@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation, useParams, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { useSiteContent } from "@/data/siteContent";
 import { resolveImageUrl } from "@/utils/storage";
@@ -8,13 +8,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams();
   const siteContent = useSiteContent();
   const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
-
-  // Detect landing mode from URL
-  const landingSlug = params.landingSlug || params.slug || null;
-  const isLandingMode = Boolean(landingSlug) && location.pathname.startsWith("/landing/");
 
   // Update favicon and tab title from site content
   useEffect(() => {
@@ -46,31 +41,18 @@ export default function Header() {
     }
   }, [siteContent.about.logo]);
 
-  // Home link resolves to current origin (stays on same domain)
-  const homeLink = isLandingMode && landingSlug
-    ? `${window.location.origin}/landing/${landingSlug}`
-    : "/";
+  const homeLink = "/";
   
   const headerSettings = siteContent.header;
-  const brandText = isLandingMode
-    ? landingSlug?.toUpperCase().replace(/-/g, " ")
-    : headerSettings.brandLine1 || "FOETIDA MAGNA";
-  const brandSubtext = isLandingMode
-    ? "КАТАЛОГ"
-    : headerSettings.brandLine2 || "ИЗЫСКАННЫЙ АВТОПАРФЮМ";
+  const brandText = headerSettings.brandLine1 || "FOETIDA MAGNA";
+  const brandSubtext = headerSettings.brandLine2 || "ИЗЫСКАННЫЙ АВТОПАРФЮМ";
 
-  const navLinks = isLandingMode && landingSlug
-    ? [
-        { name: "Каталог", path: `/landing/${landingSlug}?tab=catalogue` },
-        { name: "О нас", path: `/landing/${landingSlug}#about` },
-        ...(headerSettings.navLinks?.admin !== false ? [{ name: "Админ", path: "/admin" }] : []),
-      ]
-    : [
-        ...(headerSettings.navLinks?.catalogue !== false ? [{ name: "Каталог", path: "/catalogue" }] : []),
-        ...(headerSettings.navLinks?.brands !== false ? [{ name: "Бренды", path: "/catalogue?tab=brands" }] : []),
-        ...(headerSettings.navLinks?.about !== false ? [{ name: "О нас", path: "/#about" }] : []),
-        ...(headerSettings.navLinks?.admin !== false ? [{ name: "Админ", path: "/admin" }] : []),
-      ];
+  const navLinks = [
+    ...(headerSettings.navLinks?.catalogue !== false ? [{ name: "Каталог", path: "/catalogue" }] : []),
+    ...(headerSettings.navLinks?.brands !== false ? [{ name: "Бренды", path: "/catalogue?tab=brands" }] : []),
+    ...(headerSettings.navLinks?.about !== false ? [{ name: "О нас", path: "/#about" }] : []),
+    ...(headerSettings.navLinks?.admin !== false ? [{ name: "Админ", path: "/admin" }] : []),
+  ];
 
   // Handle hash links (e.g. "/#about") with smooth scrolling
   const handleHashLink = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
@@ -113,7 +95,7 @@ export default function Header() {
           <a href={homeLink} className="flex items-center gap-3 shrink-0">
             <img
               src={logoUrl}
-              alt={isLandingMode ? landingSlug : "FOETIDA MAGNA"}
+              alt="FOETIDA MAGNA"
               className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
             />
             <div className="hidden sm:block">

@@ -9,7 +9,6 @@ import {
   setSiteContent,
   persistSiteContent,
   type SiteContent,
-  type Banner,
 } from "@/data/siteContent";
 import { buildMapUrl } from "@/utils/mapUrl";
 import {
@@ -28,7 +27,6 @@ import Footer from "@/components/Footer";
 
 type Tab =
   | "catalogue-management"
-  | "landing-content"
   | "settings";
 
 type CatalogueSubtab = "products" | "brands" | "categories";
@@ -456,6 +454,63 @@ export default function Admin() {
   const [confirmModal, setConfirmModal] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Import state
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState<{
+    imported_count: number;
+    total_processed: number;
+    errors: Array<{ row: number | string; field: string; message: string }>;
+  } | null>(null);
+
+  const downloadTemplate = async () => {
+    try {
+      const response = await fetch("/api/v1/entities/products/template");
+      if (!response.ok) throw new Error("Failed to download template");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "product_import_template.xlsx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      showToast("Шаблон скачан");
+    } catch (err) {
+      console.error("Template download failed:", err);
+      showToast("Не удалось скачать шаблон");
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImportLoading(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      const response = await fetch("/api/v1/entities/products/import", {
+        method: "POST",
+        body: formData,
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || "Import failed");
+      }
+      const result = await response.json();
+      setImportResult(result);
+      if (result.imported_count > 0) {
+        showToast(`Импортировано ${result.imported_count} продуктов`);
+      }
+    } catch (err: any) {
+      showToast(err.message || "Не удалось импортировать файл");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const selectedCount = selectedIds.size;
   const allSelected = productList.length > 0 && selectedIds.size === productList.length;
 
@@ -719,45 +774,8 @@ export default function Admin() {
     await persistProductDelete(id);
   };
 
-  // Banner helpers
-  const updateBanner = (
-    index: number,
-    field: keyof Banner,
-    value: string
-  ) => {
-    updateDraft((prev) => {
-      const banners = [...prev.about.banners];
-      banners[index] = { ...banners[index], [field]: value };
-      return { ...prev, about: { ...prev.about, banners } };
-    });
-  };
-
-  const addBanner = () => {
-    updateDraft((prev) => ({
-      ...prev,
-      about: {
-        ...prev.about,
-        banners: [
-          ...prev.about.banners,
-          { title: "Новый баннер", link: "/catalogue", image: "" },
-        ],
-      },
-    }));
-  };
-
-  const removeBanner = (index: number) => {
-    updateDraft((prev) => ({
-      ...prev,
-      about: {
-        ...prev.about,
-        banners: prev.about.banners.filter((_, i) => i !== index),
-      },
-    }));
-  };
-
   const tabs: { key: Tab; label: string }[] = [
     { key: "catalogue-management", label: "Каталог" },
-{ key: "landing-content", label: "Управление Лэндингом" },
     { key: "settings", label: "Настройки" },
   ];
 
@@ -838,15 +856,27 @@ export default function Admin() {
                   </span>
                 )}
               </p>
-              <button
-                onClick={() => {
-                  resetForm();
-                  setShowAddForm(true);
-                }}
-                className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-              >
-                + Добавить продукт
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setImportFile(null);
+                    setImportResult(null);
+                    setShowImportModal(true);
+                  }}
+                  className="border border-[#C69B56]/50 text-[#C69B56] text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#C69B56]/10 transition-colors"
+                >
+                  Импорт
+                </button>
+                <button
+                  onClick={() => {
+                    resetForm();
+                    setShowAddForm(true);
+                  }}
+                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-4 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
+                >
+                  + Добавить продукт
+                </button>
+              </div>
             </div>
 
             {/* Bulk Actions Bar */}
@@ -1338,6 +1368,138 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
+
+            {/* Import Modal */}
+            {showImportModal && (
+              <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60" role="dialog" aria-modal="true" aria-label="Импорт продуктов">
+                <div className="bg-[#1A1A1A] border border-white/10 p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+                  <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-4">
+                    Импорт продуктов
+                  </h3>
+
+                  <div className="space-y-4">
+                    {/* Step 1: Download template */}
+                    <div className="bg-black border border-white/5 p-4">
+                      <h4 className="text-white/70 text-xs uppercase tracking-wide mb-2">Шаг 1: Скачайте шаблон</h4>
+                      <p className="text-white/30 text-[11px] mb-3">
+                        Скачайте Excel-шаблон с правильными заголовками колонок. Заполните его данными продуктов.
+                      </p>
+                      <button
+                        onClick={downloadTemplate}
+                        className="border border-[#C69B56]/50 text-[#C69B56] text-xs tracking-wide px-4 py-2 hover:bg-[#C69B56]/10 transition-colors"
+                      >
+                        📥 Скачать шаблон (.xlsx)
+                      </button>
+                    </div>
+
+                    {/* Step 2: Upload file */}
+                    <div className="bg-black border border-white/5 p-4">
+                      <h4 className="text-white/70 text-xs uppercase tracking-wide mb-2">Шаг 2: Загрузите заполненный файл</h4>
+                      <p className="text-white/30 text-[11px] mb-3">
+                        Поддерживаются форматы .xlsx и .csv
+                      </p>
+                      <div
+                        className={`border border-dashed p-6 text-center cursor-pointer transition-colors ${
+                          importFile ? "border-green-500/50 bg-green-500/5" : "border-white/20 hover:border-white/40"
+                        }`}
+                        onClick={() => document.getElementById("import-file-input")?.click()}
+                        onDragOver={(e) => { e.preventDefault(); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const file = e.dataTransfer.files[0];
+                          if (file) {
+                            setImportFile(file);
+                            setImportResult(null);
+                          }
+                        }}
+                      >
+                        {importFile ? (
+                          <div className="text-green-400">
+                            <p className="text-sm font-medium">{importFile.name}</p>
+                            <p className="text-[11px] text-white/40 mt-1">
+                              {(importFile.size / 1024).toFixed(1)} КБ — Нажмите чтобы заменить
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="text-white/30">
+                            <Upload size={24} className="mx-auto mb-2" />
+                            <p className="text-xs">Нажмите или перетащите файл</p>
+                            <p className="text-[11px] mt-1">.xlsx или .csv</p>
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        id="import-file-input"
+                        type="file"
+                        accept=".xlsx,.xls,.csv"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setImportFile(file);
+                            setImportResult(null);
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                    </div>
+
+                    {/* Import result */}
+                    {importResult && (
+                      <div className={`border p-4 ${
+                        importResult.errors.length > 0
+                          ? "border-yellow-500/30 bg-yellow-500/5"
+                          : "border-green-500/30 bg-green-500/5"
+                      }`}>
+                        <h4 className={`text-xs uppercase tracking-wide mb-2 ${
+                          importResult.errors.length > 0 ? "text-yellow-400" : "text-green-400"
+                        }`}>
+                          Результат импорта
+                        </h4>
+                        <p className="text-white/70 text-sm">
+                          Импортировано: <span className="text-green-400 font-medium">{importResult.imported_count}</span> из {importResult.total_processed} продуктов
+                        </p>
+                        {importResult.errors.length > 0 && (
+                          <div className="mt-3 max-h-40 overflow-y-auto">
+                            <p className="text-yellow-400/80 text-[11px] mb-2">Ошибки:</p>
+                            {importResult.errors.map((err, i) => (
+                              <div key={i} className="text-[11px] text-white/50 mb-1">
+                                {err.row !== "unknown" && <span>Строка {err.row}: </span>}
+                                <span className="text-yellow-400/70">{err.field}</span> — {err.message}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleImport}
+                        disabled={!importFile || importLoading}
+                        className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {importLoading && (
+                          <div className="w-3 h-3 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        )}
+                        {importLoading ? "Импорт..." : "Импортировать"}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowImportModal(false);
+                          setImportFile(null);
+                          setImportResult(null);
+                        }}
+                        className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
+                      >
+                        Закрыть
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
             )}
 
@@ -1556,426 +1718,6 @@ export default function Admin() {
           </div>
             )}
           </>
-        )}
-
-        {/* ═══════════════════════════════════════════ */}
-        {/* LANDING CONTENT TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "landing-content" && (
-          <div>
-            <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-Управление Лэндингом
-            </h3>
-
-            {/* ─── СЕКЦИЯ: Верхний Колонтитул ─── */}
-            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-2">
-              Верхний Колонтитул
-            </h4>
-
-            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <ImageUpload
-                  label="Favicon (иконка вкладки)"
-                  value={draft.header.favicon}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      header: { ...prev.header, favicon: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Текст вкладки (Title)"
-                  value={draft.header.tabTitle}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      header: { ...prev.header, tabTitle: v },
-                    }))
-                  }
-                  placeholder="Foetida Magna — Изысканный Автопарфюм"
-                />
-                <Field
-                  label="Бренд — строка 1"
-                  value={draft.header.brandLine1}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      header: { ...prev.header, brandLine1: v },
-                    }))
-                  }
-                  placeholder="FOETIDA MAGNA"
-                />
-                <Field
-                  label="Бренд — строка 2"
-                  value={draft.header.brandLine2}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      header: { ...prev.header, brandLine2: v },
-                    }))
-                  }
-                  placeholder="ИЗЫСКАННЫЙ АВТОПАРФЮМ"
-                />
-              </div>
-
-              {/* Навигация: чекбоксы */}
-              <div className="mt-6">
-                <p className="text-white/50 text-xs uppercase tracking-[0.1em] mb-3">
-                  Навигационные ссылки
-                </p>
-                <div className="grid sm:grid-cols-2 gap-2">
-                  {(["catalogue", "brands", "about", "admin"] as const).map((key) => (
-                    <label key={key} className="flex items-center gap-3 text-sm text-white/70 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={(draft.header.navLinks as any)[key] !== false}
-                        onChange={(e) =>
-                          updateDraft((prev) => ({
-                            ...prev,
-                            header: {
-                              ...prev.header,
-                              navLinks: { ...prev.header.navLinks, [key]: e.target.checked },
-                            },
-                          }))
-                        }
-                        className="accent-[#C69B56] w-4 h-4"
-                      />
-                      {key === "catalogue" && "Каталог"}
-                      {key === "brands" && "Бренды"}
-                      {key === "about" && "О нас"}
-                      {key === "admin" && "Админ"}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
-              </div>
-            </div>
-
-            {/* ─── СЕКЦИЯ: Герой-Баннер ─── */}
-            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-2">
-              Герой-Баннер
-            </h4>
-
-            <div className="bg-[#1A1A1A] border border-white/10 p-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <ImageUpload
-                  label="Фоновое изображение"
-                  value={draft.hero.backgroundImage}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, backgroundImage: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Подзаголовок"
-                  value={draft.hero.subtitle}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, subtitle: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Заголовок — строка 1"
-                  value={draft.hero.headingLine1}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, headingLine1: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Заголовок — строка 2 (выделенная)"
-                  value={draft.hero.headingLine2}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, headingLine2: v },
-                    }))
-                  }
-                />
-                <div className="sm:col-span-2">
-                  <Field
-                    label="Описание"
-                    value={draft.hero.description}
-                    onChange={(v) =>
-                      updateDraft((prev) => ({
-                        ...prev,
-                        hero: { ...prev.hero, description: v },
-                      }))
-                    }
-                    rows={3}
-                  />
-                </div>
-                <Field
-                  label="Текст кнопки"
-                  value={draft.hero.buttonText}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, buttonText: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Ссылка кнопки"
-                  value={draft.hero.buttonLink}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      hero: { ...prev.hero, buttonLink: v },
-                    }))
-                  }
-                />
-              </div>
-
-              {/* Preview */}
-              <div className="mt-6 border border-white/5 overflow-hidden">
-                <p className="text-white/30 text-[10px] uppercase tracking-wider px-4 py-2 bg-black/50">
-                  Предпросмотр
-                </p>
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={draft.hero.backgroundImage}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/60 to-black/30" />
-                  <div className="absolute inset-0 flex items-center px-6">
-                    <div>
-                      <p className="text-[#C69B56] text-[10px] tracking-[0.2em] uppercase mb-1">
-                        {draft.hero.subtitle}
-                      </p>
-                      <p className="text-white text-lg font-light">
-                        {draft.hero.headingLine1}{" "}
-                        <span className="text-[#C69B56]">
-                          {draft.hero.headingLine2}
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={saveContent}
-                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                >
-                  Сохранить
-                </button>
-                <button
-                  onClick={resetDraft}
-                  className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                >
-                  Сбросить
-                </button>
-                {saved && (
-                  <span className="text-green-400 text-xs self-center">
-                    ✓ Сохранено
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* ─── СЕКЦИЯ: Заголовки ─── */}
-            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
-              Заголовки
-            </h4>
-
-            <div className="bg-[#1A1A1A] border border-white/10 p-6">
-              <div className="grid sm:grid-cols-2 gap-6">
-                <Field
-                  label="Заголовок «Категории»"
-                  value={draft.sectionHeadings.categories}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      sectionHeadings: { ...prev.sectionHeadings, categories: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Заголовок «Хиты продаж»"
-                  value={draft.sectionHeadings.featured}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      sectionHeadings: { ...prev.sectionHeadings, featured: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Заголовок «Новинки»"
-                  value={draft.sectionHeadings.newArrivals}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      sectionHeadings: { ...prev.sectionHeadings, newArrivals: v },
-                    }))
-                  }
-                />
-                <Field
-                  label="Заголовок «О нас»"
-                  value={draft.sectionHeadings.about}
-                  onChange={(v) =>
-                    updateDraft((prev) => ({
-                      ...prev,
-                      sectionHeadings: { ...prev.sectionHeadings, about: v },
-                    }))
-                  }
-                />
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={saveContent}
-                  className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors"
-                >
-                  Сохранить
-                </button>
-                <button
-                  onClick={resetDraft}
-                  className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors"
-                >
-                  Сбросить
-                </button>
-                {saved && (
-                  <span className="text-green-400 text-xs self-center">✓ Сохранено</span>
-                )}
-              </div>
-            </div>
-
-            {/* ─── СЕКЦИЯ: О Нас ─── */}
-            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
-              О Нас
-            </h4>
-
-            {/* Баннеры */}
-            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase">Баннеры</h4>
-                <button onClick={addBanner} className="text-[#C69B56] text-xs tracking-wide hover:text-[#d4aa65] transition-colors">
-                  + Добавить баннер
-                </button>
-              </div>
-              <div className="space-y-4">
-                {draft.about.banners.map((banner, i) => (
-                  <div key={i} className="bg-black border border-white/5 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-white/30 text-[10px] uppercase tracking-wider">Баннер {i + 1}</span>
-                      <button onClick={() => removeBanner(i)} className="text-white/30 hover:text-red-400 text-xs transition-colors">Удалить</button>
-                    </div>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                      <Field label="Заголовок" value={banner.title} onChange={(v) => updateBanner(i, "title", v)} />
-                      <Field label="Ссылка (URL)" value={banner.link} onChange={(v) => updateBanner(i, "link", v)} placeholder="/catalogue или https://..." />
-                      <div className="sm:col-span-2">
-                        <ImageUpload label="Изображение баннера" value={banner.image} onChange={(v) => updateBanner(i, "image", v)} previewWidth={200} previewHeight={160} />
-                      </div>
-                    </div>
-                    {banner.image && (
-                      <div className="mt-3 border border-white/5 overflow-hidden">
-                        <p className="text-white/20 text-[10px] uppercase tracking-wider px-3 py-1 bg-black/50">Предпросмотр</p>
-                        <div className="relative w-[200px] h-[160px] overflow-hidden">
-                          <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-50" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                          <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <span className="text-white text-sm font-medium tracking-wide">{banner.title}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              {draft.about.banners.length === 0 && (
-                <div className="text-center py-6">
-                  <p className="text-white/30 text-xs">Нет баннеров. Нажмите «+ Добавить баннер».</p>
-                </div>
-              )}
-              <div className="flex gap-3 mt-6">
-                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
-                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
-                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
-              </div>
-            </div>
-
-            {/* Логотип */}
-            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-4">
-              <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase mb-4">Логотип</h4>
-              <p className="text-white/30 text-[10px] mb-4">Рекомендуется квадратное изображение (40×40 px / 48×48 px).</p>
-              <ImageUpload label="Логотип сайта" value={draft.about.logo || "/logo.jpg"} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, logo: v } }))} folder="logos" previewWidth={80} previewHeight={80} />
-              <div className="flex gap-3 mt-6">
-                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
-                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
-                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
-              </div>
-            </div>
-
-            {/* Описание и контакты */}
-            <div className="bg-[#1A1A1A] border border-white/10 p-6">
-              <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase mb-4">Описание и контакты</h4>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Название" value={draft.about.title} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, title: v } }))} />
-                <div />
-                <div className="sm:col-span-2">
-                  <Field label="Описание — абзац 1" value={draft.about.description1} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, description1: v } }))} rows={3} />
-                </div>
-                <div className="sm:col-span-2">
-                  <Field label="Описание — абзац 2" value={draft.about.description2} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, description2: v } }))} rows={3} />
-                </div>
-                <Field label="Локация" value={draft.about.location} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, location: v } }))} />
-                <Field label="Телефон" value={draft.about.phone} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, phone: v } }))} />
-                <Field label="Email" value={draft.about.email} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, email: v } }))} />
-                <Field label="Часы работы" value={draft.about.workingHours} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, workingHours: v } }))} />
-                <div className="sm:col-span-2">
-                  <Field label="URL карты" value={draft.about.mapUrl} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, mapUrl: v } }))} placeholder="https://www.openstreetmap.org/..." />
-                  <button type="button" onClick={() => { const url = buildMapUrl(draft.about.location); if (url) updateDraft((prev) => ({ ...prev, about: { ...prev.about, mapUrl: url } })); }} className="mt-2 text-xs text-[#C69B56] hover:text-[#d4aa65] transition-colors tracking-[0.1em] uppercase">
-                    🔄 Сгенерировать из локации
-                  </button>
-                </div>
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
-                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
-                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
-              </div>
-            </div>
-
-            {/* ─── СЕКЦИЯ: Подвал ─── */}
-            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-8">
-              Подвал
-            </h4>
-
-            <div className="bg-[#1A1A1A] border border-white/10 p-6">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="sm:col-span-2">
-                  <Field label="Описание бренда" value={draft.footer.brandDescription} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, brandDescription: v } }))} rows={2} />
-                </div>
-                <Field label="Telegram" value={draft.footer.telegram} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, telegram: v } }))} placeholder="@username" />
-                <Field label="Viber" value={draft.footer.viber} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, viber: v } }))} placeholder="+375 (XX) XXX-XX-XX" />
-                <Field label="Instagram" value={draft.footer.instagram} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, instagram: v } }))} placeholder="@username" />
-                <Field label="Email" value={draft.footer.email} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, email: v } }))} />
-                <Field label="Телефон" value={draft.footer.phone} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, phone: v } }))} />
-                <Field label="Копирайт" value={draft.footer.copyright} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, copyright: v } }))} />
-                <Field label="Текст «Политика конфиденциальности»" value={draft.footer.privacyPolicyText} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, privacyPolicyText: v } }))} />
-                <Field label="Текст «Оферта»" value={draft.footer.offerText} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, offerText: v } }))} />
-                <PdfUpload label="PDF — Политика конфиденциальности" value={draft.footer.privacyPolicyPdf} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, privacyPolicyPdf: v } }))} />
-                <PdfUpload label="PDF — Оферта" value={draft.footer.offerPdf} onChange={(v) => updateDraft((prev) => ({ ...prev, footer: { ...prev.footer, offerPdf: v } }))} />
-              </div>
-              <div className="flex gap-3 mt-6">
-                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
-                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
-                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
-              </div>
-            </div>
-          </div>
         )}
 
         {/* ═══════════════════════════════════════════ */}
