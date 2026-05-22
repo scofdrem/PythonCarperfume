@@ -1,9 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  categories,
-  featuredProducts,
-  newProducts,
-} from "@/data/products";
+import { useProductStore, useCategoryStore } from "@/data/productsStore";
 import { useSiteContent } from "@/data/siteContent";
 import { buildMapUrl } from "@/utils/mapUrl";
 import { StorageImage } from "./StorageImage";
@@ -11,6 +7,7 @@ import ProductCard from "./ProductCard";
 
 export function CategoryGrid() {
   const content = useSiteContent();
+  const { categories } = useCategoryStore();
 
   return (
     <section className="py-16 sm:py-24 bg-black">
@@ -50,6 +47,7 @@ export function CategoryGrid() {
 
 export function FeaturedProducts() {
   const content = useSiteContent();
+  const { featuredProducts } = useProductStore();
 
   return (
     <section className="py-16 sm:py-24 bg-[#0A0A0A]">
@@ -81,6 +79,7 @@ export function FeaturedProducts() {
 
 export function NewArrivals() {
   const content = useSiteContent();
+  const { newProducts } = useProductStore();
 
   return (
     <section className="py-16 sm:py-24 bg-[#0A0A0A]">
