@@ -32,7 +32,7 @@ function mapProductToBackend(product: Partial<Product>): Record<string, any> {
   if (product.brand !== undefined) data.brand = product.brand;
   if (product.price !== undefined) data.price = product.price;
   if (product.category !== undefined) data.category = product.category;
-  if (product.volumes !== undefined) data.volumes = product.volumes.join(",");
+  if (product.volumes !== undefined && product.volumes.length > 0) data.volumes = product.volumes.join(",");
   if (product.image !== undefined) data.image = product.image;
   if (product.description !== undefined) data.description = product.description;
   if (product.instagramUrl !== undefined) data.instagram_url = product.instagramUrl;
@@ -82,7 +82,7 @@ export async function updateProduct(
     return response.data ? mapProductFromBackend(response.data) : null;
   } catch (e: any) {
     console.error(`[updateProduct] Failed for product ${id}:`, e?.message, e?.response?.status, JSON.stringify(e?.response?.data));
-    return null;
+    throw e;
   }
 }
 
@@ -262,16 +262,20 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
 
       try {
         if (existing) {
-          // Remove existing entry first to avoid update issues
-          await client.entities.site_content.delete({ id: String(existing.id) });
+          // Update existing entry
+          await client.entities.site_content.update({
+            id: String(existing.id),
+            data: { content_key: key, content_value: value },
+          });
+        } else {
+          // Create new entry
+          await client.entities.site_content.create({
+            data: { content_key: key, content_value: value },
+          });
         }
-        // Create new entry with updated content
-        await client.entities.site_content.create({
-          data: { content_key: key, content_value: value },
-        });
       } catch (sectionErr: any) {
         console.error(`saveSiteContent: failed to persist section "${key}":`, sectionErr?.message || sectionErr);
-        throw sectionErr; // Re-throw to fail the entire operation
+        throw sectionErr;
       }
     }
     return true;

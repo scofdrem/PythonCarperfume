@@ -180,12 +180,11 @@ export async function initCategoriesFromBackend(): Promise<void> {
   if (categoriesLoaded) return;
   try {
     const data = await fetchCategories();
-    if (data && data.length > 0) {
-      currentCategories = data;
-      categoryListeners.forEach((fn) => fn());
-    }
+    currentCategories = data;
+    categoryListeners.forEach((fn) => fn());
   } catch {
-    // Fall back to static data
+    currentCategories = [];
+    categoryListeners.forEach((fn) => fn());
   }
   categoriesLoaded = true;
 }

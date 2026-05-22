@@ -25,13 +25,11 @@ import {
 } from "@/data/productsStore";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import LandingPageAdmin from "@/components/landing/LandingPageAdmin";
 
 type Tab =
   | "catalogue-management"
   | "landing-content"
-  | "settings"
-  | "landing-pages";
+  | "settings";
 
 type CatalogueSubtab = "products" | "brands" | "categories";
 
@@ -673,30 +671,27 @@ export default function Admin() {
       .map((v) => Number(v.trim()))
       .filter((v) => !isNaN(v));
 
-    if (editingProduct) {
-      // Only include image in updates if user explicitly set a value (including empty to clear)
-      // This ensures changes are actually persisted to the backend
-      const imageValue = formImage !== "" ? formImage : editingProduct.image;
-      const updated = await persistProductUpdate(editingProduct.id, {
-        name: formName,
-        brand: formBrand,
-        category: formCategory,
-        price: formPrice,
-        volumes,
-        image: imageValue,
-        description: formDescription || undefined,
-        instagramUrl: formInstagramUrl || undefined,
-        refillable: formRefillable || undefined,
-        isFeatured: formFeatured || undefined,
-        isNew: formNew || undefined,
-      });
-      if (!updated) {
-        setSaveError("Не удалось сохранить изменения. Проверьте соединение и попробуйте снова.");
-        return;
-      }
-      showToast("Продукт сохранён");
-    } else {
-      const created = await addProduct({
+    try {
+      if (editingProduct) {
+        // Only include image in updates if user explicitly set a value (including empty to clear)
+        // This ensures changes are actually persisted to the backend
+        const imageValue = formImage !== "" ? formImage : editingProduct.image;
+        await persistProductUpdate(editingProduct.id, {
+          name: formName,
+          brand: formBrand,
+          category: formCategory,
+          price: formPrice,
+          volumes,
+          image: imageValue,
+          description: formDescription || undefined,
+          instagramUrl: formInstagramUrl || undefined,
+          refillable: formRefillable || undefined,
+          isFeatured: formFeatured,
+          isNew: formNew,
+        });
+        showToast("Продукт сохранён");
+      } else {
+        const created = await addProduct({
         name: formName,
         brand: formBrand,
         category: formCategory,
@@ -708,14 +703,14 @@ export default function Admin() {
         description: formDescription || undefined,
         instagramUrl: formInstagramUrl || undefined,
         refillable: formRefillable || undefined,
-        isFeatured: formFeatured || undefined,
-        isNew: formNew || undefined,
-      });
-      if (!created) {
-        setSaveError("Не удалось создать продукт. Проверьте соединение и попробуйте снова.");
-        return;
+        isFeatured: formFeatured,
+        isNew: formNew,
+        });
+        showToast("Продукт создан");
       }
-      showToast("Продукт создан");
+    } catch (e: any) {
+      setSaveError(e?.response?.data?.detail || e?.message || "Не удалось сохранить изменения");
+      return;
     }
     resetForm();
   };
@@ -764,7 +759,6 @@ export default function Admin() {
     { key: "catalogue-management", label: "Каталог" },
 { key: "landing-content", label: "Управление Лэндингом" },
     { key: "settings", label: "Настройки" },
-    { key: "landing-pages", label: "Landing Pages" },
   ];
 
   return (
@@ -988,17 +982,11 @@ export default function Admin() {
                     className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
                   >
                     <option value="">— Выберите категорию —</option>
-                    {uniqueCategories.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
+                    {storeCategories.map((cat) => (
+                      <option key={cat.slug} value={cat.name}>
+                        {cat.name}
                       </option>
                     ))}
-                    <option value="niche">Нишевая</option>
-                    <option value="luxury">Люксовая</option>
-                    <option value="women">Женская</option>
-                    <option value="men">Мужская</option>
-                    <option value="unisex">Унисекс</option>
-                    <option value="decants">Отливанты</option>
                   </select>
                   <div className="flex gap-3 mt-6">
                     <button
@@ -1169,11 +1157,12 @@ export default function Admin() {
                       onChange={(e) => setFormCategory(e.target.value)}
                       className="w-full bg-black border border-white/10 text-white text-sm px-3 py-2 focus:border-[#C69B56] outline-none"
                     >
-                      <option value="Hanging Air Freshener">Hanging Air Freshener</option>
-                      <option value="Vent Clip Freshener">Vent Clip Freshener</option>
-                      <option value="Gel Freshener">Gel Freshener</option>
-                      <option value="Diffusor">Diffusor</option>
-                      <option value="Solid Freshener">Solid Freshener</option>
+                      <option value="">— Выберите категорию —</option>
+                      {storeCategories.map((cat) => (
+                        <option key={cat.slug} value={cat.name}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                   <div>
@@ -2637,12 +2626,6 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ═══════════════════════════════════════════ */}
-        {/* LANDING PAGES TAB */}
-        {/* ═══════════════════════════════════════════ */}
-        {activeTab === "landing-pages" && (
-          <LandingPageAdmin />
-        )}
       </div>
 
       <Footer />

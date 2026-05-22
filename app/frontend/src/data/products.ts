@@ -1,8 +1,8 @@
 export interface Product {
   id: number;
   name: string;
-  brand: "PlaceholderBrand1" | "PlaceholderBrand2" | "PlaceholderBrand3" | "PlaceholderBrand4";
-  category: "Hanging Air Freshener" | "Vent Clip Freshener" | "Gel Freshener" | "Diffusor" | "Solid Freshener";
+  brand: string;
+  category: string;
   price: number;
   volumes: number[];
   image: string;
@@ -31,13 +31,7 @@ const PROD_3 = "https://mgx-backend-cdn.metadl.com/generate/images/1170518/2026-
 
 export const heroImage = HERO_IMG;
 
-export const categories: Category[] = [
-  { name: "Hanging Air Freshener", slug: "hanging-air-freshener", image: PROD_1 },
-  { name: "Vent Clip Freshener", slug: "vent-clip-freshener", image: PROD_2 },
-  { name: "Gel Freshener", slug: "gel-freshener", image: PROD_3 },
-  { name: "Diffusor", slug: "diffusor", image: PROD_1 },
-  { name: "Solid Freshener", slug: "solid-freshener", image: PROD_2 },
-];
+export const categories: Category[] = [];
 
 export const brands: Brand[] = [
   { name: "PlaceholderBrand1", slug: "placeholderbrand1" },
