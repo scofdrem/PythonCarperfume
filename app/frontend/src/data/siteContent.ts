@@ -7,7 +7,21 @@ export interface Banner {
   image: string;
 }
 
+export interface HeaderSettings {
+  favicon: string;
+  tabTitle: string;
+  brandLine1: string;
+  brandLine2: string;
+  navLinks: {
+    catalogue: boolean;
+    brands: boolean;
+    about: boolean;
+    admin: boolean;
+  };
+}
+
 export interface SiteContent {
+  header: HeaderSettings;
   hero: {
     backgroundImage: string;
     subtitle: string;
@@ -51,10 +65,22 @@ export interface SiteContent {
 }
 
 export const defaultSiteContent: SiteContent = {
+  header: {
+    favicon: "",
+    tabTitle: "Foetida Magna — Изысканный Автопарфюм",
+    brandLine1: "FOETIDA MAGNA",
+    brandLine2: "ИЗЫСКАННЫЙ АВТОПАРФЮМ",
+    navLinks: {
+      catalogue: true,
+      brands: true,
+      about: true,
+      admin: true,
+    },
+  },
   hero: {
     backgroundImage:
       "https://images.unsplash.com/photo-1541643600914-78b084683601?w=1920&q=80",
-    subtitle: "ПАРФЮМ НА РАСПИВ",
+    subtitle: "ИЗЫСКАННЫЙ АВТОПАРФЮМ",
     headingLine1: "Мир элитных",
     headingLine2: "ароматов",
     description:
@@ -81,7 +107,7 @@ export const defaultSiteContent: SiteContent = {
         image: "https://images.unsplash.com/photo-1587017539504-67cfbddac569?w=600&q=80",
       },
     ],
-    title: "1000 Ароматов",
+    title: "Foetida Magna",
     description1:
       "Мы — магазин парфюмерии на распив, который предлагает вам возможность познакомиться с элитными ароматами без необходимости покупать полный флакон. Каждый отливант разливается из оригинального флакона в стерильные условия с соблюдением всех стандартов качества.",
     description2:
@@ -129,6 +155,18 @@ export function setSiteContent(content: SiteContent) {
 
 /** Migrate old about.cards to about.banners if needed */
 function migrateContent(data: Record<string, any>): SiteContent {
+  // Ensure header section exists with defaults
+  if (!data.header) {
+    data.header = defaultSiteContent.header;
+  } else {
+    // Merge missing fields from defaults
+    data.header = { ...defaultSiteContent.header, ...data.header };
+    if (!data.header.navLinks) {
+      data.header.navLinks = defaultSiteContent.header.navLinks;
+    } else {
+      data.header.navLinks = { ...defaultSiteContent.header.navLinks, ...data.header.navLinks };
+    }
+  }
   const about = data.about || {};
   // If banners missing but cards exist, convert cards → banners
   if (!about.banners && about.cards) {

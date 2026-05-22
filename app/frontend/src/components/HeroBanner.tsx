@@ -41,7 +41,7 @@ export default function HeroBanner() {
           <div className="mb-6">
             <img
               src={logoUrl}
-              alt="1000 Ароматов"
+              alt="Foetida Magna"
               className="h-20 sm:h-24 lg:h-28 w-auto object-contain rounded-lg"
             />
           </div>

@@ -762,7 +762,7 @@ export default function Admin() {
 
   const tabs: { key: Tab; label: string }[] = [
     { key: "catalogue-management", label: "Каталог" },
-    { key: "landing-content", label: "Управление Лэндингом 1000 Ароматов" },
+{ key: "landing-content", label: "Управление Лэндингом" },
     { key: "settings", label: "Настройки" },
     { key: "landing-pages", label: "Landing Pages" },
   ];
@@ -1575,8 +1575,95 @@ export default function Admin() {
         {activeTab === "landing-content" && (
           <div>
             <h3 className="text-[#C69B56] text-sm tracking-[0.1em] uppercase mb-6">
-              Управление Лэндингом 1000 Ароматов
+Управление Лэндингом
             </h3>
+
+            {/* ─── СЕКЦИЯ: Верхний Колонтитул ─── */}
+            <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-2">
+              Верхний Колонтитул
+            </h4>
+
+            <div className="bg-[#1A1A1A] border border-white/10 p-6 mb-6">
+              <div className="grid sm:grid-cols-2 gap-6">
+                <ImageUpload
+                  label="Favicon (иконка вкладки)"
+                  value={draft.header.favicon}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      header: { ...prev.header, favicon: v },
+                    }))
+                  }
+                />
+                <Field
+                  label="Текст вкладки (Title)"
+                  value={draft.header.tabTitle}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      header: { ...prev.header, tabTitle: v },
+                    }))
+                  }
+                  placeholder="Foetida Magna — Изысканный Автопарфюм"
+                />
+                <Field
+                  label="Бренд — строка 1"
+                  value={draft.header.brandLine1}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      header: { ...prev.header, brandLine1: v },
+                    }))
+                  }
+                  placeholder="FOETIDA MAGNA"
+                />
+                <Field
+                  label="Бренд — строка 2"
+                  value={draft.header.brandLine2}
+                  onChange={(v) =>
+                    updateDraft((prev) => ({
+                      ...prev,
+                      header: { ...prev.header, brandLine2: v },
+                    }))
+                  }
+                  placeholder="ИЗЫСКАННЫЙ АВТОПАРФЮМ"
+                />
+              </div>
+
+              {/* Навигация: чекбоксы */}
+              <div className="mt-6">
+                <p className="text-white/50 text-xs uppercase tracking-[0.1em] mb-3">
+                  Навигационные ссылки
+                </p>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {(["catalogue", "brands", "about", "admin"] as const).map((key) => (
+                    <label key={key} className="flex items-center gap-3 text-sm text-white/70 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={(draft.header.navLinks as any)[key] !== false}
+                        onChange={(e) =>
+                          updateDraft((prev) => ({
+                            ...prev,
+                            header: {
+                              ...prev.header,
+                              navLinks: { ...prev.header.navLinks, [key]: e.target.checked },
+                            },
+                          }))
+                        }
+                        className="accent-[#C69B56] w-4 h-4"
+                      />
+                      {key === "catalogue" && "Каталог"}
+                      {key === "brands" && "Бренды"}
+                      {key === "about" && "О нас"}
+                      {key === "admin" && "Админ"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
+              </div>
+            </div>
 
             {/* ─── СЕКЦИЯ: Герой-Баннер ─── */}
             <h4 className="text-white/70 text-sm tracking-[0.1em] uppercase mb-4 mt-2">
@@ -1823,6 +1910,11 @@ export default function Admin() {
                   <p className="text-white/30 text-xs">Нет баннеров. Нажмите «+ Добавить баннер».</p>
                 </div>
               )}
+              <div className="flex gap-3 mt-6">
+                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
+                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
+                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
+              </div>
             </div>
 
             {/* Логотип */}
@@ -1830,6 +1922,11 @@ export default function Admin() {
               <h4 className="text-white/50 text-xs tracking-[0.1em] uppercase mb-4">Логотип</h4>
               <p className="text-white/30 text-[10px] mb-4">Рекомендуется квадратное изображение (40×40 px / 48×48 px).</p>
               <ImageUpload label="Логотип сайта" value={draft.about.logo || "/logo.jpg"} onChange={(v) => updateDraft((prev) => ({ ...prev, about: { ...prev.about, logo: v } }))} folder="logos" previewWidth={80} previewHeight={80} />
+              <div className="flex gap-3 mt-6">
+                <button onClick={saveContent} className="bg-[#C69B56] text-black text-xs tracking-[0.1em] uppercase px-5 py-2 font-medium hover:bg-[#d4aa65] transition-colors">Сохранить</button>
+                <button onClick={resetDraft} className="border border-white/20 text-white/50 text-xs tracking-[0.1em] uppercase px-5 py-2 hover:text-white/80 hover:border-white/40 transition-colors">Сбросить</button>
+                {saved && <span className="text-green-400 text-xs self-center">✓ Сохранено</span>}
+              </div>
             </div>
 
             {/* Описание и контакты */}

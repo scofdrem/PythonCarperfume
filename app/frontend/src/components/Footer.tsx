@@ -77,15 +77,15 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-3 mb-4">
               <img
                 src={logoUrl}
-                alt="1000 АРОМАТОВ"
+                alt="FOETIDA MAGNA"
                 className="h-10 w-10 rounded-full object-cover"
               />
               <div>
                 <div className="text-[#C69B56] text-sm font-semibold tracking-[0.15em]">
-                  1000 АРОМАТОВ
+                  FOETIDA MAGNA
                 </div>
                 <div className="text-[#C69B56]/50 text-[9px] tracking-[0.1em]">
-                  ПАРФЮМ НА РАСПИВ
+                  ИЗЫСКАННЫЙ АВТОПАРФЮМ
                 </div>
               </div>
             </Link>

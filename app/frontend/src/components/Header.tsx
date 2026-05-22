@@ -10,10 +10,32 @@ export default function Header() {
   const params = useParams();
   const siteContent = useSiteContent();
   const [logoUrl, setLogoUrl] = useState<string>("/logo.jpg");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Detect landing mode from URL
   const landingSlug = params.landingSlug || params.slug || null;
   const isLandingMode = Boolean(landingSlug) && location.pathname.startsWith("/landing/");
+
+  // Check admin auth
+  useEffect(() => {
+    setIsAdmin(!!localStorage.getItem("admin_access_token"));
+  }, []);
+
+  // Update favicon and tab title from site content
+  useEffect(() => {
+    if (siteContent.header.tabTitle) {
+      document.title = siteContent.header.tabTitle;
+    }
+    if (siteContent.header.favicon) {
+      let link = document.querySelector("link[rel*='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement("link");
+        link.rel = "icon";
+        document.head.appendChild(link);
+      }
+      link.href = siteContent.header.favicon;
+    }
+  }, [siteContent.header.tabTitle, siteContent.header.favicon]);
 
   // Resolve logo URL when site content changes
   useEffect(() => {
@@ -34,8 +56,13 @@ export default function Header() {
     ? `${window.location.origin}/landing/${landingSlug}`
     : "/";
   
-  const brandText = isLandingMode ? landingSlug?.toUpperCase().replace(/-/g, " ") : "1000 АРОМАТОВ";
-  const brandSubtext = isLandingMode ? "КАТАЛОГ" : "ПАРФЮМ НА РАСПИВ";
+  const headerSettings = siteContent.header;
+  const brandText = isLandingMode
+    ? landingSlug?.toUpperCase().replace(/-/g, " ")
+    : headerSettings.brandLine1 || "FOETIDA MAGNA";
+  const brandSubtext = isLandingMode
+    ? "КАТАЛОГ"
+    : headerSettings.brandLine2 || "ИЗЫСКАННЫЙ АВТОПАРФЮМ";
 
   const navLinks = isLandingMode && landingSlug
     ? [
@@ -43,9 +70,10 @@ export default function Header() {
         { name: "О нас", path: `/landing/${landingSlug}#about` },
       ]
     : [
-        { name: "Каталог", path: "/catalogue" },
-        { name: "Бренды", path: "/catalogue?tab=brands" },
-        { name: "О нас", path: "/#about" },
+        ...(headerSettings.navLinks?.catalogue !== false ? [{ name: "Каталог", path: "/catalogue" }] : []),
+        ...(headerSettings.navLinks?.brands !== false ? [{ name: "Бренды", path: "/catalogue?tab=brands" }] : []),
+        ...(headerSettings.navLinks?.about !== false ? [{ name: "О нас", path: "/#about" }] : []),
+        ...(isAdmin && headerSettings.navLinks?.admin !== false ? [{ name: "Админ", path: "/admin" }] : []),
       ];
 
   return (
@@ -64,7 +92,7 @@ export default function Header() {
           <a href={homeLink} className="flex items-center gap-3 shrink-0">
             <img
               src={logoUrl}
-              alt={isLandingMode ? landingSlug : "1000 АРОМАТОВ"}
+              alt={isLandingMode ? landingSlug : "FOETIDA MAGNA"}
               className="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover"
             />
             <div className="hidden sm:block">
