@@ -1,42 +1,41 @@
-# Kill processes on staging ports - kill all PIDs per port
-$ports = @(3001, 8001)
-foreach ($port in $ports) {
-    $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-    if ($connections) {
-        foreach ($conn in $connections) {
-            $procId = $conn.OwningProcess
-            if ($procId -gt 0) {
-                Write-Host "Killing process $procId on port $port"
-                Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
-            }
-        }
-    }
+# Restart staging environment
+# Delegates to separate stop and start scripts
+
+function Write-Info { Write-Host "[INFO] $args" -ForegroundColor Cyan }
+function Write-Success { Write-Host "[SUCCESS] $args" -ForegroundColor Green }
+function Write-Err { Write-Host "[ERROR] $args" -ForegroundColor Red }
+
+Write-Info "========================================="
+Write-Info "  Restarting Staging Environment"
+Write-Info "========================================="
+
+$SCRIPT_DIR = $PSScriptRoot
+$stopScript = Join-Path $SCRIPT_DIR "stop_staging.ps1"
+$startScript = Join-Path $SCRIPT_DIR "start_staging.ps1"
+
+# Validate scripts exist
+if (-not (Test-Path $stopScript)) {
+    Write-Err "Missing stop script: $stopScript"
+    exit 1
+}
+if (-not (Test-Path $startScript)) {
+    Write-Err "Missing start script: $startScript"
+    exit 1
 }
 
-# Wait for ports to fully release - loop with retries
-$maxRetries = 5
-for ($i = 0; $i -lt $maxRetries; $i++) {
-    Start-Sleep -Seconds 2
-    $stillInUse = $false
-    foreach ($port in $ports) {
-        $check = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-        if ($check) {
-            $stillInUse = $true
-            # Kill any remaining processes
-            foreach ($conn in $check) {
-                $procId = $conn.OwningProcess
-                if ($procId -gt 0) {
-                    Write-Host "Retrying kill process $procId on port $port"
-                    Stop-Process -Id $procId -Force -ErrorAction SilentlyContinue
-                }
-            }
-        }
-    }
-    if (-not $stillInUse) { break }
-    Write-Host "Port still in use, retrying... ($($i+1)/$maxRetries)"
+# Stop
+Write-Host ""
+Write-Info "Step 1: Stopping services..."
+& $stopScript
+if ($LASTEXITCODE -ne 0 -and $LASTEXITCODE -ne $null) {
+    Write-Err "Stop script failed (exit code: $LASTEXITCODE)"
+    exit 1
 }
 
-Start-Sleep -Seconds 3
+Write-Host ""
+Write-Info "Step 2: Starting services..."
+& $startScript
 
-# Start staging server
-& "$PSScriptRoot\start_staging.ps1"
+Write-Host ""
+Write-Success "Restart complete."
+Write-Info "========================================="

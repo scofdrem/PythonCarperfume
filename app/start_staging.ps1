@@ -9,11 +9,30 @@ $PYTHON_BACKEND_URL = "http://127.0.0.1:$BACKEND_PORT"
 # Colors for output
 function Write-Info { Write-Host "[INFO] $args" -ForegroundColor Cyan }
 function Write-Success { Write-Host "[SUCCESS] $args" -ForegroundColor Green }
-function Write-Error { Write-Host "[ERROR] $args" -ForegroundColor Red }
+function Write-Warning { Write-Host "[WARNING] $args" -ForegroundColor Yellow }
+function Write-Err { Write-Host "[ERROR] $args" -ForegroundColor Red }
+
+function Test-PortAvailable {
+    param([int]$Port)
+    $connections = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+    return ($connections -eq $null)
+}
 
 Write-Info "========================================="
 Write-Info "  1000Aromas - Staging Environment"
 Write-Info "========================================="
+
+# Pre-flight check: verify ports are available
+Write-Info "Running pre-flight checks..."
+if (-not (Test-PortAvailable -Port $BACKEND_PORT)) {
+    Write-Err "Backend port $BACKEND_PORT is already in use. Run stop_staging.ps1 first or use restart_staging.ps1."
+    exit 1
+}
+if (-not (Test-PortAvailable -Port $FRONTEND_PORT)) {
+    Write-Err "Frontend port $FRONTEND_PORT is already in use. Run stop_staging.ps1 first or use restart_staging.ps1."
+    exit 1
+}
+Write-Success "All ports available"
 
 # Load environment variables from .env.staging
 $envFile = Join-Path $PSScriptRoot ".env.staging"
@@ -32,23 +51,7 @@ if (Test-Path $envFile) {
         }
     }
 } else {
-    Write-Error "Could not find .env.staging at $envFile"
-    exit 1
-}
-
-# Check if ports are available
-function Test-Port($port) {
-    $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-    return $connections -eq $null
-}
-
-if (-not (Test-Port $BACKEND_PORT)) {
-    Write-Error "Port $BACKEND_PORT is already in use. Please stop the process using this port."
-    exit 1
-}
-
-if (-not (Test-Port $FRONTEND_PORT)) {
-    Write-Error "Port $FRONTEND_PORT is already in use. Please stop the process using this port."
+    Write-Err "Could not find .env.staging at $envFile"
     exit 1
 }
 
@@ -79,13 +82,56 @@ Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot
 
 Write-Success "Frontend started at http://localhost:$FRONTEND_PORT"
 
+# Health check
+Write-Info "Running health checks..."
+$backendReady = $false
+$frontendReady = $false
+$maxAttempts = 10
+
+# Check backend
+for ($i = 1; $i -le $maxAttempts; $i++) {
+    try {
+        $r = Invoke-WebRequest -Uri "$PYTHON_BACKEND_URL/docs" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+        if ($r.StatusCode -eq 200) {
+            Write-Success "Backend is ready (attempt $i/$maxAttempts)"
+            $backendReady = $true
+            break
+        }
+    } catch { }
+    if ($i -lt $maxAttempts) {
+        Write-Info "Waiting for backend... ($i/$maxAttempts)"
+        Start-Sleep -Seconds 2
+    }
+}
+
+# Check frontend
+for ($i = 1; $i -le $maxAttempts; $i++) {
+    try {
+        $r = Invoke-WebRequest -Uri "http://localhost:$FRONTEND_PORT" -UseBasicParsing -TimeoutSec 3 -ErrorAction SilentlyContinue
+        if ($r.StatusCode -eq 200) {
+            Write-Success "Frontend is ready (attempt $i/$maxAttempts)"
+            $frontendReady = $true
+            break
+        }
+    } catch { }
+    if ($i -lt $maxAttempts) {
+        Write-Info "Waiting for frontend... ($i/$maxAttempts)"
+        Start-Sleep -Seconds 2
+    }
+}
+
 Write-Host ""
 Write-Info "========================================="
-Write-Info "  Staging Environment Ready!"
+Write-Info "  Staging Environment Status"
 Write-Info "========================================="
-Write-Info ""
-Write-Info "Frontend: http://localhost:$FRONTEND_PORT"
-Write-Info "Backend:  $PYTHON_BACKEND_URL"
-Write-Info ""
-Write-Info "Press Ctrl+C to stop all services"
+if ($backendReady) {
+    Write-Success "Backend:  $PYTHON_BACKEND_URL/docs"
+} else {
+    Write-Warning "Backend:  Not responding (may need more time)"
+}
+if ($frontendReady) {
+    Write-Success "Frontend: http://localhost:$FRONTEND_PORT"
+} else {
+    Write-Warning "Frontend: Not responding (may need more time)"
+}
 Write-Info "========================================="
