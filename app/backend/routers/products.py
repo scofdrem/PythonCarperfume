@@ -4,7 +4,9 @@ from typing import Any, List, Optional
 
 from datetime import datetime, date
 
+from dependencies.auth import get_admin_user
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
+from models.auth import User
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -208,6 +210,7 @@ async def get_products(
 async def create_products(
     data: ProductsData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create a new products"""
     logger.debug(f"Creating new products with data: {data}")
@@ -232,6 +235,7 @@ async def create_products(
 async def create_productss_batch(
     request: ProductsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create multiple productss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} productss")
@@ -257,6 +261,7 @@ async def create_productss_batch(
 async def update_productss_batch(
     request: ProductsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update multiple productss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} productss")
@@ -285,6 +290,7 @@ async def update_products(
     id: int,
     data: ProductsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update an existing products"""
     logger.debug(f"Updating products {id} with data: {data}")
@@ -314,6 +320,7 @@ async def update_products(
 async def delete_productss_batch(
     request: ProductsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete multiple productss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} productss")
@@ -339,6 +346,7 @@ async def delete_productss_batch(
 async def delete_products(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete a single products by ID"""
     logger.debug(f"Deleting products with id: {id}")
@@ -426,6 +434,7 @@ async def download_template() -> Any:
 async def import_products(
     file: UploadFile = File(...),
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ) -> Any:
     """
     Import products from an Excel (.xlsx, .xls) or CSV file.

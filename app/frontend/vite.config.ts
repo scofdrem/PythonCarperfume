@@ -58,7 +58,7 @@ export default defineConfig(({ command }) => {
       port: parseInt(process.env.VITE_PORT || '3000'),
       proxy: {
         '/api': {
-          target: process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8002',
+          target: process.env.PYTHON_BACKEND_URL || 'http://127.0.0.1:8001',
           changeOrigin: true,
         },
       },

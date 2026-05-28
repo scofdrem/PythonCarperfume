@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { loadRuntimeConfig } from './lib/config.ts';
+import { initProductsFromBackend, initCategoriesFromBackend } from './data/productsStore';
 
 // Load runtime configuration before rendering the app
 async function initializeApp() {
@@ -24,6 +25,14 @@ async function initializeApp() {
       'Failed to load runtime configuration, using defaults:',
       error
     );
+  }
+
+  // Load products and categories from backend
+  try {
+    await Promise.all([initProductsFromBackend(), initCategoriesFromBackend()]);
+    console.log('Products and categories loaded from backend');
+  } catch (error) {
+    console.warn('Failed to load products/categories from backend:', error);
   }
 
   // Render the app

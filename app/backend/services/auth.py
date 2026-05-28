@@ -1,196 +1,206 @@
 import hashlib
 import logging
-import os
-import time
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Tuple
 
-from core.auth import create_access_token
+from core.auth import create_access_token, create_refresh_token, decode_refresh_token
 from core.config import settings
-from core.database import db_manager
-from models.auth import OIDCState, User
-from sqlalchemy import delete, select
+from core.exceptions import UnauthorizedError
+from core.security import verify_password
+from models.auth import User
+from models.refresh_token import RefreshToken
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
+
+
+class AccountLockedError(UnauthorizedError):
+    """Raised when account is temporarily locked due to failed login attempts."""
 
 
 class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_or_create_user(self, platform_sub: str, email: str, name: Optional[str] = None) -> User:
-        """Get existing user or create new one."""
-        start_time = time.time()
-        logger.debug(f"[DB_OP] Starting get_or_create_user - platform_sub: {platform_sub}")
-        # Try to find existing user
-        result = await self.db.execute(select(User).where(User.id == platform_sub))
-        user = result.scalar_one_or_none()
-        logger.debug(f"[DB_OP] User lookup completed in {time.time() - start_time:.4f}s - found: {user is not None}")
+    async def _check_lockout(self, user: User) -> None:
+        """Check if account is locked and raise if so."""
+        now = datetime.now(timezone.utc)
+        if user.locked_until and user.locked_until > now:
+            remaining = int((user.locked_until - now).total_seconds())
+            logger.warning(f"Account locked for {user.login}, {remaining}s remaining")
+            raise AccountLockedError(f"Account temporarily locked. Try again in {remaining} seconds.")
+        # Auto-unlock if expired
+        if user.locked_until and user.locked_until <= now:
+            user.locked_until = None
+            user.failed_login_attempts = 0
 
-        if user:
-            # Update user info if needed
-            user.email = email
-            user.name = name
-            user.last_login = datetime.now(timezone.utc)
-        else:
-            # Create new user
-            user = User(id=platform_sub, email=email, name=name, last_login=datetime.now(timezone.utc))
-            self.db.add(user)
-
-        start_time_commit = time.time()
-        logger.debug("[DB_OP] Starting user commit/refresh")
-        await self.db.commit()
-        await self.db.refresh(user)
-        logger.debug(f"[DB_OP] User commit/refresh completed in {time.time() - start_time_commit:.4f}s")
-        return user
-
-    async def issue_app_token(
-        self,
-        user: User,
-    ) -> Tuple[str, datetime, Dict[str, Any]]:
-        """Generate application JWT token for the authenticated user."""
-        try:
-            expires_minutes = int(getattr(settings, "jwt_expire_minutes", 60))
-        except (TypeError, ValueError):
-            logger.warning("Invalid JWT_EXPIRE_MINUTES value; fallback to 60 minutes")
-            expires_minutes = 60
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=expires_minutes)
-
-        claims: Dict[str, Any] = {
-            "sub": user.id,
-            "email": user.email,
-            "role": user.role,
-        }
-
-        if user.name:
-            claims["name"] = user.name
-        if user.last_login:
-            claims["last_login"] = user.last_login.isoformat()
-        token = create_access_token(claims, expires_minutes=expires_minutes)
-
-        return token, expires_at, claims
-
-    async def store_oidc_state(self, state: str, nonce: str, code_verifier: str):
-        """Store OIDC state in database."""
-        # Clean up expired states first
-        await self.db.execute(delete(OIDCState).where(OIDCState.expires_at < datetime.now(timezone.utc)))
-
-        expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)  # 10 minute expiry
-
-        oidc_state = OIDCState(state=state, nonce=nonce, code_verifier=code_verifier, expires_at=expires_at)
-
-        self.db.add(oidc_state)
+    async def _record_failed_attempt(self, user: User) -> None:
+        """Increment failed attempts, lock account if threshold reached."""
+        user.failed_login_attempts += 1
+        logger.warning(f"Failed attempt {user.failed_login_attempts}/{settings.max_failed_login_attempts} for {user.login}")
+        if user.failed_login_attempts >= settings.max_failed_login_attempts:
+            user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=settings.lockout_duration_minutes)
+            logger.warning(f"Account locked: {user.login}")
         await self.db.commit()
 
-    async def get_and_delete_oidc_state(self, state: str) -> Optional[dict]:
-        """Get and delete OIDC state from database."""
-        # Clean up expired states first
-        await self.db.execute(delete(OIDCState).where(OIDCState.expires_at < datetime.now(timezone.utc)))
-
-        # Find and validate state
-        result = await self.db.execute(select(OIDCState).where(OIDCState.state == state))
-        oidc_state = result.scalar_one_or_none()
-
-        if not oidc_state:
-            return None
-
-        # Extract data before deleting
-        state_data = {"nonce": oidc_state.nonce, "code_verifier": oidc_state.code_verifier}
-
-        # Delete the used state (one-time use)
-        await self.db.delete(oidc_state)
-        await self.db.commit()
-
-        return state_data
-
-    def _verify_password(self, password: str, password_hash_with_salt: str) -> bool:
-        """Verify a password against a stored hash (format: salt:hash)."""
-        try:
-            if ":" not in password_hash_with_salt:
-                logger.warning("Password hash format is invalid (missing salt separator)")
-                return False
-
-            salt, stored_hash = password_hash_with_salt.split(":", 1)
-
-            # Hash the provided password with the same salt
-            key = hashlib.pbkdf2_hmac(
-                "sha256",
-                password.encode("utf-8"),
-                salt.encode("utf-8"),
-                100000,  # iterations - must match seed_admin_user.py
-            )
-            computed_hash = key.hex()
-
-            return computed_hash == stored_hash
-        except Exception as e:
-            logger.error(f"Error verifying password: {e}")
-            return False
+    async def _clear_failed_attempts(self, user: User) -> None:
+        """Reset failed attempts on successful login."""
+        if user.failed_login_attempts > 0 or user.locked_until is not None:
+            user.failed_login_attempts = 0
+            user.locked_until = None
+            await self.db.commit()
 
     async def authenticate_admin(self, username: str, password: str) -> Optional[User]:
-        """Authenticate admin user by username and password."""
-        # Look up user by login field
+        """Authenticate admin user with username and password."""
+        logger.info(f"Authenticating admin user: {username}")
         result = await self.db.execute(
-            select(User).where(User.login == username, User.role == "admin")
+            select(User).where(User.login == username, User.role == "admin", User.is_active == True)
         )
-        user: Optional[User] = result.scalar_one_or_none()
-
+        user = result.scalar_one_or_none()
         if not user:
-            logger.warning(f"Admin login attempt with unknown username: {username}")
+            logger.warning(f"Admin user not found: {username}")
             return None
 
-        if not user.password_hash:
-            logger.warning(f"Admin user {username} has no password hash configured")
+        try:
+            await self._check_lockout(user)
+        except AccountLockedError:
+            raise
+
+        if not verify_password(password, user.password_hash):
+            await self._record_failed_attempt(user)
+            logger.warning(f"Invalid password for: {username}")
             return None
 
-        if not self._verify_password(password, user.password_hash):
-            logger.warning(f"Invalid password for admin user: {username}")
-            return None
-
-        # Update last_login
+        await self._clear_failed_attempts(user)
         user.last_login = datetime.now(timezone.utc)
         await self.db.commit()
-        await self.db.refresh(user)
-
-        logger.info(f"Admin user {username} authenticated successfully")
+        logger.info(f"Admin authenticated: {username}")
         return user
+
+    async def issue_token_pair(self, user: User) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Issue access + refresh token pair. Old refresh tokens are NOT auto-revoked here —
+        callers can use rotate_refresh_token() for strict one-time rotation."""
+        now = datetime.now(timezone.utc)
+
+        # Access token
+        access_claims = {
+            "sub": str(user.id),
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "username": user.login or "",
+        }
+        access_token = create_access_token(access_claims)
+        access_expires_at = now + timedelta(minutes=int(settings.access_token_expire_minutes))
+
+        # Refresh token
+        jti = secrets.token_urlsafe(32)
+        refresh_token_str, refresh_expires_at = create_refresh_token(str(user.id), jti)
+
+        # Store in DB
+        token_hash = hashlib.sha256(refresh_token_str.encode()).hexdigest()
+        rt = RefreshToken(
+            id=secrets.token_urlsafe(16),
+            user_id=str(user.id),
+            token_hash=token_hash,
+            jti=jti,
+            expires_at=refresh_expires_at,
+        )
+        self.db.add(rt)
+        await self.db.commit()
+
+        logger.info(f"Token pair issued for {user.id}, jti: {jti}")
+        return (
+            {"token": access_token, "expires_at": access_expires_at, "expires_in": int(settings.access_token_expire_minutes) * 60},
+            {"token": refresh_token_str, "expires_at": refresh_expires_at, "jti": jti},
+        )
+
+    async def rotate_refresh_token(self, old_refresh_token: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Rotate refresh token: validate old, revoke it, issue new pair."""
+        try:
+            payload = decode_refresh_token(old_refresh_token)
+        except Exception as exc:
+            logger.warning(f"Invalid refresh token: {exc}")
+            raise UnauthorizedError("Invalid refresh token")
+
+        user_id = payload.get("sub")
+        jti = payload.get("jti")
+        if not user_id or not jti:
+            raise UnauthorizedError("Invalid refresh token payload")
+
+        # Find in DB
+        result = await self.db.execute(
+            select(RefreshToken).where(
+                RefreshToken.jti == jti,
+                RefreshToken.user_id == user_id,
+                RefreshToken.is_revoked == False,
+                RefreshToken.expires_at > datetime.now(timezone.utc),
+            )
+        )
+        rt = result.scalar_one_or_none()
+        if not rt:
+            logger.warning(f"Refresh token not found/revoked: {jti}")
+            raise UnauthorizedError("Refresh token revoked or expired")
+
+        # Revoke old token
+        rt.is_revoked = True
+
+        # Fetch user
+        user_result = await self.db.execute(select(User).where(User.id == user_id))
+        user = user_result.scalar_one_or_none()
+        if not user or not user.is_active:
+            raise UnauthorizedError("User not found or inactive")
+
+        await self.db.commit()
+        return await self.issue_token_pair(user)
 
 
 async def initialize_admin_user():
-    """Initialize admin user if not exists"""
-    if "MGX_IGNORE_INIT_ADMIN" in os.environ:
-        logger.info("Ignore initialize admin")
-        return
+    """Seed the default admin user if it does not exist.
 
-    from services.database import initialize_database
+    Reads credentials from settings (``admin_login``, ``admin_email``,
+    ``admin_password``).  Falls back to the values previously used in
+    *seed_admin_user.py* when the settings are not configured.
+    """
+    from core.config import settings
+    from core.database import db_manager
+    from core.security import hash_password
+    from models.auth import User
+    from sqlalchemy import select
 
-    # Ensure database is initialized first
-    await initialize_database()
+    logger = logging.getLogger(__name__)
+    await db_manager.init_db()
 
-    admin_user_id = getattr(settings, "admin_user_id", "")
-    admin_user_email = getattr(settings, "admin_user_email", "")
-
-    if not admin_user_id or not admin_user_email:
-        logger.warning("Admin user ID or email not configured, skipping admin initialization")
-        return
+    admin_id = getattr(settings, "admin_id", "admin")
+    admin_login = getattr(settings, "admin_login", "admin")
+    admin_email = getattr(settings, "admin_email", "aromaty1000@gmail.com")
+    admin_password = getattr(settings, "admin_password", "admin12345")
 
     async with db_manager.async_session_maker() as db:
-        # Check if admin user already exists
-        result = await db.execute(select(User).where(User.id == admin_user_id))
-        user = result.scalar_one_or_none()
+        result = await db.execute(select(User).where(User.id == admin_id))
+        existing = result.scalar_one_or_none()
 
-        if user:
-            # Update existing user to admin if not already
-            if user.role != "admin":
-                user.role = "admin"
-                user.email = admin_user_email  # Update email too
-                await db.commit()
-                logger.debug(f"Updated user {admin_user_id} to admin role")
-            else:
-                logger.debug(f"Admin user {admin_user_id} already exists")
-        else:
-            # Create new admin user
-            admin_user = User(id=admin_user_id, email=admin_user_email, role="admin")
-            db.add(admin_user)
+        if existing:
+            existing.login = admin_login
+            existing.email = admin_email
+            existing.password_hash = hash_password(admin_password)
+            existing.name = admin_login
+            existing.role = "admin"
             await db.commit()
-            logger.debug(f"Created admin user: {admin_user_id} with email: {admin_user_email}")
+            logger.info("Admin user '%s' updated", admin_login)
+        else:
+            db.add(
+                User(
+                    id=admin_id,
+                    email=admin_email,
+                    login=admin_login,
+                    name=admin_login,
+                    role="admin",
+                    password_hash=hash_password(admin_password),
+                    is_active=True,
+                )
+            )
+            await db.commit()
+            logger.info("Admin user '%s' created", admin_login)

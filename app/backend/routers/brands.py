@@ -1,3 +1,4 @@
+from dependencies.auth import get_admin_user
 import json
 import logging
 from typing import List, Optional
@@ -5,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime, date
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from models.auth import User
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -174,6 +176,7 @@ async def get_brands(
 async def create_brands(
     data: BrandsData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create a new brands"""
     logger.debug(f"Creating new brands with data: {data}")
@@ -198,6 +201,7 @@ async def create_brands(
 async def create_brandss_batch(
     request: BrandsBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create multiple brandss in a single request"""
     logger.debug(f"Batch creating {len(request.items)} brandss")
@@ -223,6 +227,7 @@ async def create_brandss_batch(
 async def update_brandss_batch(
     request: BrandsBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update multiple brandss in a single request"""
     logger.debug(f"Batch updating {len(request.items)} brandss")
@@ -251,6 +256,7 @@ async def update_brands(
     id: int,
     data: BrandsUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update an existing brands"""
     logger.debug(f"Updating brands {id} with data: {data}")
@@ -280,6 +286,7 @@ async def update_brands(
 async def delete_brandss_batch(
     request: BrandsBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete multiple brandss by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} brandss")
@@ -305,6 +312,7 @@ async def delete_brandss_batch(
 async def delete_brands(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete a single brands by ID"""
     logger.debug(f"Deleting brands with id: {id}")

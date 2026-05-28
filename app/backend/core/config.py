@@ -40,10 +40,38 @@ class Settings(BaseSettings):
     # Database
     database_url: str = "sqlite+aiosqlite:///./app.db"
 
+    # JWT Auth
+    jwt_secret_key: str = ""  # REQUIRED in .env — no default
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 30
+    access_token_expire_minutes: int = 15
+
+    # Security
+    max_failed_login_attempts: int = 5
+    lockout_duration_minutes: int = 30
+
+    # CORS
+    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
+
+    # Admin
+    admin_user_id: str = ""
+    admin_user_email: str = ""
+
     # AWS Lambda Configuration
     is_lambda: bool = False
     lambda_function_name: str = "fastapi-backend"
     aws_region: str = "us-east-1"
+
+    @property
+    def is_production(self) -> bool:
+        env = os.getenv("ENVIRONMENT", "prod").lower()
+        return env not in ("dev", "development", "staging")
+
+    @property
+    def cors_allow_origins(self) -> list[str]:
+        if not self.allowed_origins:
+            return ["http://localhost:5173"]
+        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
 
     @property
     def backend_url(self) -> str:

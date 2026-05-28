@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.database import get_db
+from dependencies.auth import get_admin_user
 from services.site_content import Site_contentService
 
 # Set up logging
@@ -174,6 +175,7 @@ async def get_site_content(
 async def create_site_content(
     data: Site_contentData,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Create a new site_content"""
     logger.debug(f"Creating new site_content with data: {data}")
@@ -198,6 +200,7 @@ async def create_site_content(
 async def create_site_contents_batch(
     request: Site_contentBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Create multiple site_contents in a single request"""
     logger.debug(f"Batch creating {len(request.items)} site_contents")
@@ -223,6 +226,7 @@ async def create_site_contents_batch(
 async def update_site_contents_batch(
     request: Site_contentBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Update multiple site_contents in a single request"""
     logger.debug(f"Batch updating {len(request.items)} site_contents")
@@ -251,6 +255,7 @@ async def update_site_content(
     id: int,
     data: Site_contentUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Update an existing site_content"""
     logger.debug(f"Updating site_content {id} with data: {data}")
@@ -280,6 +285,7 @@ async def update_site_content(
 async def delete_site_contents_batch(
     request: Site_contentBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Delete multiple site_contents by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} site_contents")
@@ -305,6 +311,7 @@ async def delete_site_contents_batch(
 async def delete_site_content(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_admin_user),
 ):
     """Delete a single site_content by ID"""
     logger.debug(f"Deleting site_content with id: {id}")

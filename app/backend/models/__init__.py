@@ -5,6 +5,7 @@ from models.brands import Brands
 from models.categories import Categories
 from models.inquiries import Inquiries
 from models.products import Products
+from models.refresh_token import RefreshToken
 from models.site_content import Site_content
 __all__ = [
     "App_configs",
@@ -13,6 +14,7 @@ __all__ = [
     "Inquiries",
     "OIDCState",
     "Products",
+    "RefreshToken",
     "Site_content",
     "User",
 ]

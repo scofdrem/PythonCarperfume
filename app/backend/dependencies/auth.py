@@ -1,63 +1,78 @@
+"""
+Authentication dependencies for FastAPI route protection.
+
+Provides dependency injection for:
+- Current user extraction (from Bearer token or cookie)
+- Admin-only access control
+"""
 import hashlib
 import logging
-from datetime import datetime
 from typing import Optional
 
 from core.auth import AccessTokenError, decode_access_token
-from fastapi import Depends, HTTPException, Request, status
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from schemas.auth import UserResponse
+from core.config import settings
+from core.database import get_db
+from core.exceptions import ForbiddenError, UnauthorizedError
+from fastapi import Depends, Request
+from models.auth import User
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-bearer_scheme = HTTPBearer(auto_error=False)
+
+async def get_token_from_request(request: Request) -> Optional[str]:
+    """Extract JWT token from request (cookie first, then Authorization header)."""
+    # Try cookie first
+    token = request.cookies.get("auth_token")
+    if token:
+        return token
+
+    # Try Authorization header
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        return auth_header[7:]
+
+    return None
 
 
-async def get_bearer_token(
-    request: Request, credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme)
-) -> str:
-    """Extract bearer token from Authorization header."""
-    if credentials and credentials.scheme.lower() == "bearer":
-        return credentials.credentials
+async def get_current_user(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Extract and validate current user from request.
 
-    logger.debug("Authentication required for request %s %s", request.method, request.url.path)
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication credentials were not provided")
+    Reads JWT from cookie or Authorization header, validates it,
+    and fetches the user from the database.
+    """
+    token = await get_token_from_request(request)
+    if not token:
+        raise UnauthorizedError("Authentication required")
 
-
-async def get_current_user(token: str = Depends(get_bearer_token)) -> UserResponse:
-    """Dependency to get current authenticated user via JWT token."""
     try:
         payload = decode_access_token(token)
     except AccessTokenError as exc:
-        # Log error type only, not the full exception which may contain sensitive token data
-        logger.warning("Token validation failed: %s", type(exc).__name__)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=exc.message)
+        raise UnauthorizedError(exc.message)
 
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid authentication token")
+        raise UnauthorizedError("Invalid token")
 
-    last_login_raw = payload.get("last_login")
-    last_login = None
-    if isinstance(last_login_raw, str):
-        try:
-            last_login = datetime.fromisoformat(last_login_raw)
-        except ValueError:
-            # Log user hash instead of actual user ID to avoid exposing sensitive information
-            user_hash = hashlib.sha256(str(user_id).encode()).hexdigest()[:8] if user_id else "unknown"
-            logger.debug("Failed to parse last_login for user hash: %s", user_hash)
+    # Fetch user from database
+    result = await db.execute(select(User).where(User.id == int(user_id), User.is_active == True))
+    user = result.scalar_one_or_none()
 
-    return UserResponse(
-        id=user_id,
-        email=payload.get("email", ""),
-        name=payload.get("name"),
-        role=payload.get("role", "user"),
-        last_login=last_login,
-    )
+    if not user:
+        logger.warning(f"User {user_id} not found or inactive")
+        raise UnauthorizedError("User not found or inactive")
+
+    return user
 
 
-async def get_admin_user(current_user: UserResponse = Depends(get_current_user)) -> UserResponse:
-    """Dependency to ensure current user has admin role."""
+async def get_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Verify current user has admin role."""
     if current_user.role != "admin":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+        raise ForbiddenError("Admin access required")
     return current_user

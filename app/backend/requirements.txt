@@ -27,6 +27,7 @@ greenlet
 
 # auth module dependencies
 python-jose[cryptography]>=3.3.0
+slowapi>=0.1.9
 
 # aihub module dependencies
 openai==2.16.0

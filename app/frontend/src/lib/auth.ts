@@ -1,10 +1,8 @@
 import axios, { AxiosInstance } from 'axios';
 import { getAPIBaseURL } from './config';
 
-const TOKEN_STORAGE_KEY = 'token';
-
 class RPApi {
-  private client: AxiosInstance;
+  client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
@@ -14,21 +12,11 @@ class RPApi {
       },
     });
 
-    // Add interceptor to include Authorization header with Bearer token
-    this.client.interceptors.request.use((config) => {
-      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-      return config;
-    });
-
-    // Add interceptor to clear token on 401 responses
+    // 401 interceptor — redirect to login
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
-          localStorage.removeItem(TOKEN_STORAGE_KEY);
           window.location.href = '/admin/login';
         }
         return Promise.reject(error);
@@ -36,7 +24,7 @@ class RPApi {
     );
   }
 
-  private getBaseURL() {
+  getBaseURL() {
     return getAPIBaseURL();
   }
 
@@ -56,39 +44,43 @@ class RPApi {
     }
   }
 
-  // Keep existing login method for OIDC compatibility (redirects to /admin/login)
-  async login() {
-    window.location.href = '/admin/login';
+  async login(username: string, password: string) {
+    try {
+      const response = await this.client.post(
+        `${this.getBaseURL()}/api/v1/auth/admin/login`,
+        { username, password }
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.detail || 'Login failed'
+      );
+    }
   }
 
   async logout() {
     try {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      const response = await this.client.get(
+      await this.client.post(
         `${this.getBaseURL()}/api/v1/auth/logout`
       );
-      if (response.data.redirect_url) {
-        window.location.href = response.data.redirect_url;
-      } else {
-        window.location.href = '/admin/login';
-      }
     } catch (error) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      // Best-effort logout
+    } finally {
       window.location.href = '/admin/login';
     }
   }
 
-  // Helper methods for token management
-  getToken(): string | null {
-    return localStorage.getItem(TOKEN_STORAGE_KEY);
-  }
-
-  setToken(token: string): void {
-    localStorage.setItem(TOKEN_STORAGE_KEY, token);
-  }
-
-  clearToken(): void {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
+  async refreshToken() {
+    try {
+      const response = await this.client.post(
+        `${this.getBaseURL()}/api/v1/auth/token/refresh`
+      );
+      return response.data;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.detail || 'Token refresh failed'
+      );
+    }
   }
 }
 

@@ -11,6 +11,9 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from middlewares.rate_limit import limiter
 
 # MODULE_IMPORTS_START
 import models  # noqa: F401 — ensure all model classes register with Base.metadata before create_all()
@@ -92,12 +95,14 @@ app = FastAPI(
 # MODULE_MIDDLEWARE_START
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r".*",
+    allow_origins=settings.cors_allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
 )
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # MODULE_MIDDLEWARE_END
 
 

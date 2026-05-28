@@ -1,5 +1,5 @@
 from models.base import Base
-from sqlalchemy import Column, DateTime, Integer, String
+from sqlalchemy import Column, DateTime, Integer, String, Boolean
 from sqlalchemy.sql import func
 
 
@@ -12,8 +12,11 @@ class User(Base):
     name = Column(String(255), nullable=True)
     role = Column(String(50), default="user", nullable=False)  # user/admin
     password_hash = Column(String(255), nullable=True)  # Hashed password for local auth
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     last_login = Column(DateTime(timezone=True), nullable=True)
+    failed_login_attempts = Column(Integer, default=0, nullable=False)
+    locked_until = Column(DateTime(timezone=True), nullable=True)
 
 
 class OIDCState(Base):

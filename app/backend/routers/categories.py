@@ -1,3 +1,4 @@
+from dependencies.auth import get_admin_user
 import json
 import logging
 from typing import List, Optional
@@ -5,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime, date
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from models.auth import User
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -177,6 +179,7 @@ async def get_categories(
 async def create_categories(
     data: CategoriesData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create a new categories"""
     logger.debug(f"Creating new categories with data: {data}")
@@ -201,6 +204,7 @@ async def create_categories(
 async def create_categoriess_batch(
     request: CategoriesBatchCreateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Create multiple categoriess in a single request"""
     logger.debug(f"Batch creating {len(request.items)} categoriess")
@@ -226,6 +230,7 @@ async def create_categoriess_batch(
 async def update_categoriess_batch(
     request: CategoriesBatchUpdateRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update multiple categoriess in a single request"""
     logger.debug(f"Batch updating {len(request.items)} categoriess")
@@ -254,6 +259,7 @@ async def update_categories(
     id: int,
     data: CategoriesUpdateData,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Update an existing categories"""
     logger.debug(f"Updating categories {id} with data: {data}")
@@ -283,6 +289,7 @@ async def update_categories(
 async def delete_categoriess_batch(
     request: CategoriesBatchDeleteRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete multiple categoriess by their IDs"""
     logger.debug(f"Batch deleting {len(request.ids)} categoriess")
@@ -308,6 +315,7 @@ async def delete_categoriess_batch(
 async def delete_categories(
     id: int,
     db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_admin_user),
 ):
     """Delete a single categories by ID"""
     logger.debug(f"Deleting categories with id: {id}")

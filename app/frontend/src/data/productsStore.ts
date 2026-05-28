@@ -53,11 +53,10 @@ export async function initProductsFromBackend(): Promise<void> {
   productsLoaded = true;
   try {
     const data = await fetchProducts();
-    currentProducts = data && data.length > 0 ? data : [];
+    currentProducts = data && data.length > 0 ? data : [...staticProducts];
     productListeners.forEach((fn) => fn());
-    rebuildBrandsFromProducts(currentProducts);
   } catch {
-    currentProducts = [];
+    currentProducts = [...staticProducts];
     productListeners.forEach((fn) => fn());
   }
 }
@@ -177,15 +176,15 @@ function setCategories(categories: Category[]) {
 /** Load categories from backend into the reactive store (call once on app init) */
 export async function initCategoriesFromBackend(): Promise<void> {
   if (categoriesLoaded) return;
+  categoriesLoaded = true;
   try {
     const data = await fetchCategories();
-    currentCategories = data;
+    currentCategories = data && data.length > 0 ? data : [...staticCategories];
     categoryListeners.forEach((fn) => fn());
   } catch {
-    currentCategories = [];
+    currentCategories = [...staticCategories];
     categoryListeners.forEach((fn) => fn());
   }
-  categoriesLoaded = true;
 }
 
 /** Add a category and persist to backend */

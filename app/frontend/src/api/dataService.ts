@@ -1,6 +1,7 @@
 import type { Product, Category, Brand } from "@/data/products";
 import type { SiteContent } from "@/data/siteContent";
 import { client } from "@/lib/api";
+import { authApi } from "@/lib/auth";
 
 // ─── Mapping helpers ───
 
@@ -59,14 +60,11 @@ export async function createProduct(
 ): Promise<Product | null> {
   try {
     const data = mapProductToBackend(product);
-    const response = await fetch('/api/v1/entities/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error(`Failed to create product: ${response.status}`);
-    const responseData = await response.json();
-    return mapProductFromBackend(responseData);
+    const response = await authApi.client.post(
+      `${authApi.getBaseURL()}/api/v1/entities/products`,
+      data
+    );
+    return mapProductFromBackend(response.data);
   } catch (e) {
     console.error("Failed to create product:", e);
     return null;
@@ -80,15 +78,12 @@ export async function updateProduct(
   try {
     const data = mapProductToBackend(updates);
     console.log(`[updateProduct] PUT /api/v1/entities/products/${id}`, JSON.stringify(data));
-    const response = await fetch(`/api/v1/entities/products/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error(`Failed to update product: ${response.status}`);
-    const responseData = await response.json();
-    console.log(`[updateProduct] Response:`, JSON.stringify(responseData));
-    return mapProductFromBackend(responseData);
+    const response = await authApi.client.put(
+      `${authApi.getBaseURL()}/api/v1/entities/products/${id}`,
+      data
+    );
+    console.log(`[updateProduct] Response:`, JSON.stringify(response.data));
+    return mapProductFromBackend(response.data);
   } catch (e: any) {
     console.error(`[updateProduct] Failed for product ${id}:`, e?.message);
     throw e;
@@ -97,10 +92,9 @@ export async function updateProduct(
 
 export async function deleteProduct(id: number): Promise<boolean> {
   try {
-    const response = await fetch(`/api/v1/entities/products/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error(`Failed to delete product: ${response.status}`);
+    await authApi.client.delete(
+      `${authApi.getBaseURL()}/api/v1/entities/products/${id}`
+    );
     return true;
   } catch (e) {
     console.error("Failed to delete product:", e);
@@ -132,18 +126,15 @@ export async function createCategory(
   category: Category
 ): Promise<Category | null> {
   try {
-    const response = await fetch('/api/v1/entities/categories', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await authApi.client.post(
+      `${authApi.getBaseURL()}/api/v1/entities/categories`,
+      {
         name: category.name,
         slug: category.slug,
         image: category.image,
-      }),
-    });
-    if (!response.ok) throw new Error(`Failed to create category: ${response.status}`);
-    const responseData = await response.json();
-    return mapCategoryFromBackend(responseData);
+      }
+    );
+    return mapCategoryFromBackend(response.data);
   } catch (e) {
     console.error("Failed to create category:", e);
     return null;
@@ -159,14 +150,11 @@ export async function updateCategoryById(
     if (updates.name !== undefined) data.name = updates.name;
     if (updates.slug !== undefined) data.slug = updates.slug;
     if (updates.image !== undefined) data.image = updates.image;
-    const response = await fetch(`/api/v1/entities/categories/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error(`Failed to update category: ${response.status}`);
-    const responseData = await response.json();
-    return mapCategoryFromBackend(responseData);
+    const response = await authApi.client.put(
+      `${authApi.getBaseURL()}/api/v1/entities/categories/${id}`,
+      data
+    );
+    return mapCategoryFromBackend(response.data);
   } catch (e) {
     console.error("Failed to update category:", e);
     return null;
@@ -175,10 +163,9 @@ export async function updateCategoryById(
 
 export async function deleteCategoryById(id: number): Promise<boolean> {
   try {
-    const response = await fetch(`/api/v1/entities/categories/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) throw new Error(`Failed to delete category: ${response.status}`);
+    await authApi.client.delete(
+      `${authApi.getBaseURL()}/api/v1/entities/categories/${id}`
+    );
     return true;
   } catch (e) {
     console.error("Failed to delete category:", e);
@@ -282,20 +269,16 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
       try {
         if (existing) {
           // Update existing entry
-          const res = await fetch(`/api/v1/entities/site_content/${existing.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content_key: key, content_value: value }),
-          });
-          if (!res.ok) throw new Error(`Failed to update site_content ${key}: ${res.status}`);
+          await authApi.client.put(
+            `${authApi.getBaseURL()}/api/v1/entities/site_content/${existing.id}`,
+            { content_key: key, content_value: value }
+          );
         } else {
           // Create new entry
-          const res = await fetch('/api/v1/entities/site_content', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content_key: key, content_value: value }),
-          });
-          if (!res.ok) throw new Error(`Failed to create site_content ${key}: ${res.status}`);
+          await authApi.client.post(
+            `${authApi.getBaseURL()}/api/v1/entities/site_content`,
+            { content_key: key, content_value: value }
+          );
         }
       } catch (sectionErr: any) {
         console.error(`saveSiteContent: failed to persist section "${key}":`, sectionErr?.message || sectionErr);
