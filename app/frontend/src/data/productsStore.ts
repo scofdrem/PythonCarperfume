@@ -50,17 +50,16 @@ function setProducts(products: Product[]) {
 /** Load products from backend into the reactive store (call once on app init) */
 export async function initProductsFromBackend(): Promise<void> {
   if (productsLoaded) return;
+  productsLoaded = true;
   try {
     const data = await fetchProducts();
-    if (data && data.length > 0) {
-      currentProducts = data;
-      productListeners.forEach((fn) => fn());
-      rebuildBrandsFromProducts(data);
-    }
+    currentProducts = data && data.length > 0 ? data : [];
+    productListeners.forEach((fn) => fn());
+    rebuildBrandsFromProducts(currentProducts);
   } catch {
-    // Fall back to static data
+    currentProducts = [];
+    productListeners.forEach((fn) => fn());
   }
-  productsLoaded = true;
 }
 
 /** Add a product and persist to backend */

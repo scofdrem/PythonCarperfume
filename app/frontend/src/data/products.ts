@@ -51,7 +51,6 @@ export const products: Product[] = [
     image: PROD_1,
     description: "Refreshing ocean scent for your car",
     instagramUrl: "https://instagram.com",
-    isFeatured: true,
   },
   {
     id: 2,
@@ -63,7 +62,6 @@ export const products: Product[] = [
     image: PROD_2,
     description: "Calming lavender fragrance",
     instagramUrl: "https://instagram.com",
-    isFeatured: true,
   },
   {
     id: 3,
@@ -75,7 +73,6 @@ export const products: Product[] = [
     image: PROD_3,
     description: "Long-lasting citrus gel",
     instagramUrl: "https://instagram.com",
-    isFeatured: true,
   },
   {
     id: 4,
@@ -87,7 +84,6 @@ export const products: Product[] = [
     image: PROD_1,
     description: "Elegant wooden diffusor",
     instagramUrl: "https://instagram.com",
-    isFeatured: true,
     refillable: true,
   },
   {
@@ -100,7 +96,6 @@ export const products: Product[] = [
     image: PROD_2,
     description: "Sweet vanilla solid freshener",
     instagramUrl: "https://instagram.com",
-    isFeatured: true,
   },
   {
     id: 6,
@@ -112,7 +107,6 @@ export const products: Product[] = [
     image: PROD_3,
     description: "Natural pine forest scent",
     instagramUrl: "https://instagram.com",
-    isNew: true,
   },
   {
     id: 7,
@@ -124,7 +118,6 @@ export const products: Product[] = [
     image: PROD_1,
     description: "Fresh ocean breeze",
     instagramUrl: "https://instagram.com",
-    isNew: true,
   },
   {
     id: 8,
@@ -136,7 +129,6 @@ export const products: Product[] = [
     image: PROD_2,
     description: "Soothing lavender gel",
     instagramUrl: "https://instagram.com",
-    isNew: true,
   },
   {
     id: 9,
@@ -148,7 +140,6 @@ export const products: Product[] = [
     image: PROD_3,
     description: "Luxury rose diffusor",
     instagramUrl: "https://instagram.com",
-    isNew: true,
     refillable: true,
   },
   {
@@ -161,7 +152,6 @@ export const products: Product[] = [
     image: PROD_1,
     description: "Cool mint freshener",
     instagramUrl: "https://instagram.com",
-    isNew: true,
   },
 ];
 

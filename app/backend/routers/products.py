@@ -60,7 +60,7 @@ class ProductsResponse(BaseModel):
     id: int
     name: str
     brand: str
-    price: float
+    price: Optional[float] = None
     category: Optional[str] = None
     volumes: Optional[str] = None
     image: Optional[str] = None
@@ -206,13 +206,10 @@ async def get_products(
 
 @router.post("", response_model=ProductsResponse, status_code=201)
 async def create_products(
-    request: dict,
+    data: ProductsData,
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new products"""
-    # Handle SDK wrapped data format
-    data_dict = request.get("data", request)
-    data = ProductsData(**data_dict)
     logger.debug(f"Creating new products with data: {data}")
     
     service = ProductsService(db)
@@ -286,19 +283,16 @@ async def update_productss_batch(
 @router.put("/{id}", response_model=ProductsResponse)
 async def update_products(
     id: int,
-    request: dict,
+    data: ProductsUpdateData,
     db: AsyncSession = Depends(get_db),
 ):
     """Update an existing products"""
-    logger.debug(f"Updating products {id} with data: {request}")
+    logger.debug(f"Updating products {id} with data: {data}")
 
     service = ProductsService(db)
     try:
-        # Handle SDK wrapped data format
-        data_dict = request.get("data", request)
-        update_data = ProductsUpdateData(**data_dict)
         # Only include non-None values for partial updates
-        update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+        update_dict = {k: v for k, v in data.model_dump().items() if v is not None}
         result = await service.update(id, update_dict)
         if not result:
             logger.warning(f"Products with id {id} not found for update")

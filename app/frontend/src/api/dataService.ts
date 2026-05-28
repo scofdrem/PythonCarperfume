@@ -59,8 +59,14 @@ export async function createProduct(
 ): Promise<Product | null> {
   try {
     const data = mapProductToBackend(product);
-    const response = await client.entities.products.create({ data });
-    return response.data ? mapProductFromBackend(response.data) : null;
+    const response = await fetch('/api/v1/entities/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`Failed to create product: ${response.status}`);
+    const responseData = await response.json();
+    return mapProductFromBackend(responseData);
   } catch (e) {
     console.error("Failed to create product:", e);
     return null;
@@ -74,21 +80,27 @@ export async function updateProduct(
   try {
     const data = mapProductToBackend(updates);
     console.log(`[updateProduct] PUT /api/v1/entities/products/${id}`, JSON.stringify(data));
-    const response = await client.entities.products.update({
-      id: String(id),
-      data,
+    const response = await fetch(`/api/v1/entities/products/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
-    console.log(`[updateProduct] Response:`, JSON.stringify(response.data));
-    return response.data ? mapProductFromBackend(response.data) : null;
+    if (!response.ok) throw new Error(`Failed to update product: ${response.status}`);
+    const responseData = await response.json();
+    console.log(`[updateProduct] Response:`, JSON.stringify(responseData));
+    return mapProductFromBackend(responseData);
   } catch (e: any) {
-    console.error(`[updateProduct] Failed for product ${id}:`, e?.message, e?.response?.status, JSON.stringify(e?.response?.data));
+    console.error(`[updateProduct] Failed for product ${id}:`, e?.message);
     throw e;
   }
 }
 
 export async function deleteProduct(id: number): Promise<boolean> {
   try {
-    await client.entities.products.delete({ id: String(id) });
+    const response = await fetch(`/api/v1/entities/products/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error(`Failed to delete product: ${response.status}`);
     return true;
   } catch (e) {
     console.error("Failed to delete product:", e);
@@ -120,14 +132,18 @@ export async function createCategory(
   category: Category
 ): Promise<Category | null> {
   try {
-    const response = await client.entities.categories.create({
-      data: {
+    const response = await fetch('/api/v1/entities/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         name: category.name,
         slug: category.slug,
         image: category.image,
-      },
+      }),
     });
-    return response.data ? mapCategoryFromBackend(response.data) : null;
+    if (!response.ok) throw new Error(`Failed to create category: ${response.status}`);
+    const responseData = await response.json();
+    return mapCategoryFromBackend(responseData);
   } catch (e) {
     console.error("Failed to create category:", e);
     return null;
@@ -143,11 +159,14 @@ export async function updateCategoryById(
     if (updates.name !== undefined) data.name = updates.name;
     if (updates.slug !== undefined) data.slug = updates.slug;
     if (updates.image !== undefined) data.image = updates.image;
-    const response = await client.entities.categories.update({
-      id: String(id),
-      data,
+    const response = await fetch(`/api/v1/entities/categories/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
-    return response.data ? mapCategoryFromBackend(response.data) : null;
+    if (!response.ok) throw new Error(`Failed to update category: ${response.status}`);
+    const responseData = await response.json();
+    return mapCategoryFromBackend(responseData);
   } catch (e) {
     console.error("Failed to update category:", e);
     return null;
@@ -156,7 +175,10 @@ export async function updateCategoryById(
 
 export async function deleteCategoryById(id: number): Promise<boolean> {
   try {
-    await client.entities.categories.delete({ id: String(id) });
+    const response = await fetch(`/api/v1/entities/categories/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error(`Failed to delete category: ${response.status}`);
     return true;
   } catch (e) {
     console.error("Failed to delete category:", e);
@@ -260,15 +282,20 @@ export async function saveSiteContent(content: SiteContent): Promise<boolean> {
       try {
         if (existing) {
           // Update existing entry
-          await client.entities.site_content.update({
-            id: String(existing.id),
-            data: { content_key: key, content_value: value },
+          const res = await fetch(`/api/v1/entities/site_content/${existing.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content_key: key, content_value: value }),
           });
+          if (!res.ok) throw new Error(`Failed to update site_content ${key}: ${res.status}`);
         } else {
           // Create new entry
-          await client.entities.site_content.create({
-            data: { content_key: key, content_value: value },
+          const res = await fetch('/api/v1/entities/site_content', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content_key: key, content_value: value }),
           });
+          if (!res.ok) throw new Error(`Failed to create site_content ${key}: ${res.status}`);
         }
       } catch (sectionErr: any) {
         console.error(`saveSiteContent: failed to persist section "${key}":`, sectionErr?.message || sectionErr);
@@ -292,7 +319,12 @@ export async function submitInquiry(data: {
   product_brand?: string;
 }): Promise<boolean> {
   try {
-    await client.entities.inquiries.create({ data });
+    const response = await fetch('/api/v1/entities/inquiries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error(`Failed to submit inquiry: ${response.status}`);
     return true;
   } catch (e) {
     console.error("Failed to submit inquiry:", e);
